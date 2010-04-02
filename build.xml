@@ -1,0 +1,43 @@
+<project name="lucene" default="all" basedir=".">
+
+  <property name="src.dir"   value="src" />
+  <property name="lib.dir"   value="lib"      />
+  <property name="build.dir" value="build"    />
+
+  <target name="all" depends="jar" />
+
+  <target name="compile">
+    <mkdir dir="${build.dir}/classes" />
+    <javac 
+           destdir="${build.dir}/classes"
+           debug="true"
+           verbose="false"
+           source="1.6"
+           target="1.6"
+           encoding="UTF-8"
+           fork="true"
+           deprecation="true">
+      <src path="${src.dir}/java" />
+      <include name="*.java" />
+      <classpath>
+        <fileset dir="${lib.dir}">
+          <include name="*.jar"/>
+        </fileset>
+      </classpath>
+    </javac>
+  </target>
+
+  <target name="jar" depends="compile">
+    <jar destfile="${build.dir}/jbs.jar">
+      <fileset dir="${build.dir}/classes" />
+      <fileset dir="."
+               includes="${lib.dir}/*.jar"
+               excludes="${lib.dir}/hadoop-0.19.2-core.jar" />
+    </jar>
+  </target>
+
+  <target name="clean">
+    <delete dir="${build.dir}"/>
+  </target>
+
+</project>
