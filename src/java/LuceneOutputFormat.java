@@ -15,6 +15,14 @@ import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
 
+/**
+ * Code hacked out of Nutch that can be used in a MapReduce program to
+ * index documents into a ${temp} Lucene directory, then copy the
+ * completed index into the part-nnnnn directory when the reduce is
+ * completed.  This approach works fine when the indexing is done as
+ * part of the Reduce phase, but I'm not sure it would work just as
+ * well if used for the Map.
+ */
 public class LuceneOutputFormat extends FileOutputFormat<Text, MapWritable>
 {
   public FileSystem fs;
@@ -111,7 +119,7 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, MapWritable>
       writer.optimize();
       writer.close();
 
-      // Copy the from ${temp} to HDFS and touch a "done" file.
+      // Copy the index from ${temp} to HDFS and touch a "done" file.
       fs.completeLocalOutput(perm, temp);
       fs.createNewFile(new Path(perm, "done"));
     }

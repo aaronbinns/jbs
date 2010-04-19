@@ -12,7 +12,15 @@ import org.apache.nutch.parse.ParseData;
 import org.apache.nutch.parse.ParseText;
 import org.apache.nutch.metadata.Metadata;
 
-
+/**
+ * Hadoop MR program which reads from a Nutch(WAX) segment and
+ * produces a Lucene index.
+ *
+ * Although the primary purpose is to test the LuceneOutputFormat
+ * class, to actually test that class we need a fairly complete
+ * indexing capability.  So, this test class can do end-to-end from
+ * the Nutch(WAX) segment to a Lucene index.
+ */
 public class TestLuceneOutput 
 {
 
