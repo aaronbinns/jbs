@@ -32,7 +32,7 @@
       <fileset dir="${build.dir}/classes" />
       <fileset dir="."
                includes="${lib.dir}/*.jar"
-               excludes="${lib.dir}/hadoop-0.19.2-core.jar" />
+               excludes="${lib.dir}/hadoop-*-core.jar" />
     </jar>
   </target>
 
