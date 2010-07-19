@@ -62,6 +62,19 @@ public class Indexer
       throws IOException
     {
       MapWritable m = new MapWritable( );
+
+      // FIXME: This looks pretty bogus...just merging all the
+      // mappings from the MapWritables into one.  We should take the
+      // [k,v] pairs from each MapWritable and merge them
+      // intelligently.  In particular the dates.  E.g. we might have
+      //   MapWritable1 = [ "date" => "20100501..."
+      //   MapWritable2 = [ "date" => "20081219..."
+      // We want to have
+      //   Merged       = [ "date" => ["20100501...","20081219..."]
+      // with one key "date" and multiple values.
+      // The way the below code acts is just to add both the mappings
+      // to the Merged MapWritable, which means only the last one will
+      // be kept.
       while ( values.hasNext( ) )
         {
           m.putAll( values.next( ) );
@@ -80,7 +93,7 @@ public class Indexer
       }
       
     JobConf conf = new JobConf(Indexer.class);
-    conf.setJobName("wordcount");
+    conf.setJobName("Indexer");
     
     conf.setOutputKeyClass(Text.class);
     conf.setOutputValueClass(MapWritable.class);
