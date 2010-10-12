@@ -103,8 +103,12 @@ public class Indexer
     conf.setReducerClass(Reduce.class);
     
     conf.setInputFormat(SequenceFileInputFormat.class);
-    conf.setOutputFormat(MapFileOutputFormat.class);
 
+    // LuceneOutputFormat writes to Lucene index.
+    conf.setOutputFormat(LuceneOutputFormat.class);
+    // For debugging, sometimes easier to inspect Hadoop mapfile format.
+    // conf.setOutputFormat(MapFileOutputFormat.class);
+    
     // Assume arg[0] is a Nutch(WAX) segment
     Path base = new Path( args[0] );
     FileInputFormat.addInputPath(conf, new Path( base, "parse_data"));
