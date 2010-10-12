@@ -16,7 +16,7 @@
            target="1.6"
            encoding="UTF-8"
            fork="true"
-           deprecation="true">
+           deprecation="false">
       <src path="${src.dir}/java" />
       <include name="*.java" />
       <classpath>
