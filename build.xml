@@ -6,6 +6,24 @@
 
   <target name="all" depends="jar" />
 
+  <macrodef name="git-revision">
+    <attribute name="output" />
+    <sequential>
+      <exec executable="git" outputproperty="head">
+        <arg value="rev-parse" />
+        <arg value="HEAD" />
+      </exec>
+      <echo message="Git revision: ${head}"/>
+      <exec executable="git" outputproperty="dirty">
+        <arg value="diff" />
+        <arg value="--shortstat" />
+      </exec>
+      <condition property="@{output}" value="${head}" else="${head}-dirty">
+        <equals arg1="${dirty}" arg2="" />
+      </condition>
+    </sequential>
+  </macrodef>
+
   <target name="compile">
     <mkdir dir="${build.dir}/classes" />
     <javac 
@@ -28,7 +46,9 @@
   </target>
 
   <target name="jar" depends="compile">
-    <jar destfile="${build.dir}/jbs.jar">
+    <git-revision output="git.rev"></git-revision>
+    <echo message="${git.rev}" file="${build.dir}/version" />
+    <jar destfile="${build.dir}/jbs-${git.rev}.jar">
       <fileset dir="${build.dir}/classes" />
       <fileset dir="."
                includes="${lib.dir}/*.jar"
