@@ -15,7 +15,10 @@ import org.apache.nutch.metadata.Metadata;
 
 public class Indexer extends Configured implements Tool
 {
-
+  /**
+   * Mapper that handles text files with revisit lines of the form:
+   *   URL hash date
+   */
   public static class RevisitMapper extends MapReduceBase implements Mapper<LongWritable,Text,Text,Text>
   {
     public void map( LongWritable key, Text value, OutputCollector<Text,Text> output, Reporter reporter )
@@ -37,6 +40,9 @@ public class Indexer extends Configured implements Tool
     }
   }
 
+  /**
+   * Mapper that can handle Writables from a Nutch(WAX).
+   */
   public static class Map extends MapReduceBase implements Mapper<Text, Writable, Text, MapWritable>
   {
     public void map( Text key, Writable value, OutputCollector<Text, MapWritable> output, Reporter reporter)
