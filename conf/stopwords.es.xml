@@ -1,0 +1,349 @@
+<?xml version="1.0"?>
+<configuration>
+
+<!-- A big list of Spanish stop words from:
+     http://snowball.tartarus.org/algorithms/spanish/stop.txt
+-->
+<property>
+  <name>indexer.analyzer.stopWords</name>
+  <value>
+    de             <!-- from, of -->
+    la             <!-- the, her -->
+    que            <!-- who, that -->
+    el             <!-- the -->
+    en             <!-- in -->
+    y              <!-- and -->
+    a              <!-- to -->
+    los            <!-- the, them -->
+    del            <!-- de + el -->
+    se             <!-- himself, from him etc -->
+    las            <!-- the, them -->
+    por            <!-- for, by, etc -->
+    un             <!-- a -->
+    para           <!-- for -->
+    con            <!-- with -->
+    no             <!-- no -->
+    una            <!-- a -->
+    su             <!-- his, her -->
+    al             <!-- a + el -->
+    es             <!-- from SER -->
+    lo             <!-- him -->
+    como           <!-- how -->
+    mas            <!-- more -->
+    pero           <!-- pero -->
+    sus            <!-- su plural -->
+    le             <!-- to him, her -->
+    ya             <!-- already -->
+    o              <!-- or -->
+    fue            <!-- from SER -->
+    este           <!-- this -->
+    ha             <!-- from HABER -->
+    si             <!-- himself etc -->
+    porque         <!-- because -->
+    esta           <!-- this -->
+    son            <!-- from SER -->
+    entre          <!-- between -->
+    esta           <!-- from ESTAR -->
+    cuando         <!-- when -->
+    muy            <!-- very -->
+    sin            <!-- without -->
+    sobre          <!-- on -->
+    ser            <!-- from SER -->
+    tiene          <!-- from TENER -->
+    tambien        <!-- also -->
+    me             <!-- me -->
+    hasta          <!-- until -->
+    hay            <!-- there is/are -->
+    donde          <!-- where -->
+    han            <!-- from HABER -->
+    quien          <!-- whom, that -->
+    estan          <!-- from ESTAR -->
+    estado         <!-- from ESTAR -->
+    desde          <!-- from -->
+    todo           <!-- all -->
+    nos            <!-- us -->
+    durante        <!-- during -->
+    estados        <!-- from ESTAR -->
+    todos          <!-- all -->
+    uno            <!-- a -->
+    les            <!-- to them -->
+    ni             <!-- nor -->
+    contra         <!-- against -->
+    otros          <!-- other -->
+    fueron         <!--    from SER -->
+    ese            <!-- that -->
+    eso            <!-- that -->
+    habia          <!-- from HABER -->
+    ante           <!-- before -->
+    ellos          <!-- they -->
+    e              <!-- and (variant of y) -->
+    esto           <!-- this -->
+    mi             <!-- me -->
+    antes          <!-- before -->
+    algunos        <!-- some -->
+    que            <!-- what? -->
+    unos           <!-- a -->
+    yo             <!-- I -->
+    otro           <!-- other -->
+    otras          <!-- other -->
+    otra           <!-- other -->
+    el             <!-- he -->
+    tanto          <!-- so much, many -->
+    esa            <!-- that -->
+    estos          <!-- these -->
+    mucho          <!-- much, many -->
+    quienes        <!-- who -->
+    nada           <!-- nothing -->
+    muchos         <!-- many -->
+    cual           <!-- who -->
+    sea            <!-- from SER -->
+    poco           <!-- few -->
+    ella           <!-- she -->
+    estar          <!-- to be -->
+    haber          <!-- from HABER -->
+    estas          <!-- these -->
+    estaba         <!-- from ESTAR -->
+    estamos        <!-- from ESTAR -->
+    algunas        <!-- some -->
+    algo           <!-- something -->
+    nosotros       <!-- we -->
+    
+    <!-- other forms -->
+    mi             <!-- me -->
+    mis            <!-- mi plural -->
+    tu             <!-- thou -->
+    te             <!-- thee -->
+    ti             <!-- thee -->
+    tu             <!-- thy -->
+    tus            <!-- tu plural -->
+    ellas          <!-- they -->
+    nosotras       <!-- we -->
+    vosotros       <!-- you -->
+    vosotras       <!-- you -->
+    os             <!-- you -->
+    mio            <!-- mine -->
+    mia            
+    mios           
+    mias           
+    tuyo           <!-- thine -->
+    tuya           
+    tuyos          
+    tuyas          
+    suyo           <!-- his, hers, theirs -->
+    suya           
+    suyos          
+    suyas          
+    nuestro        <!-- ours -->
+    nuestra        
+    nuestros       
+    nuestras       
+    vuestro        <!-- yours -->
+    vuestra        
+    vuestros       
+    vuestras       
+    esos           <!-- those -->
+    esas           <!-- those -->
+    
+    <!-- forms of estar, to be (not including the infinitive): -->
+    estoy
+    estas
+    esta
+    estamos
+    estais
+    estan
+    este
+    estes
+    estemos
+    esteis
+    esten
+    estare
+    estaras
+    estara
+    estaremos
+    estareis
+    estaran
+    estaria
+    estarias
+    estariamos
+    estariais
+    estarian
+    estaba
+    estabas
+    estabamos
+    estabais
+    estaban
+    estuve
+    estuviste
+    estuvo
+    estuvimos
+    estuvisteis
+    estuvieron
+    estuviera
+    estuvieras
+    estuvieramos
+    estuvierais
+    estuvieran
+    estuviese
+    estuvieses
+    estuviesemos
+    estuvieseis
+    estuviesen
+    estando
+    estado
+    estada
+    estados
+    estadas
+    estad
+    
+    <!-- forms of haber, to have (not including the infinitive): -->
+    he
+    has
+    ha
+    hemos
+    habeis
+    han
+    haya
+    hayas
+    hayamos
+    hayais
+    hayan
+    habre
+    habras
+    habra
+    habremos
+    habreis
+    habran
+    habria
+    habrias
+    habriamos
+    habriais
+    habrian
+    habia
+    habias
+    habiamos
+    habiais
+    habian
+    hube
+    hubiste
+    hubo
+    hubimos
+    hubisteis
+    hubieron
+    hubiera
+    hubieras
+    hubieramos
+    hubierais
+    hubieran
+    hubiese
+    hubieses
+    hubiesemos
+    hubieseis
+    hubiesen
+    habiendo
+    habido
+    habida
+    habidos
+    habidas
+    
+    <!-- forms of ser, to be (not including the infinitive): -->
+    soy
+    eres
+    es
+    somos
+    sois
+    son
+    sea
+    seas
+    seamos
+    seais
+    sean
+    sere
+    seras
+    sera
+    seremos
+    sereis
+    seran
+    seria
+    serias
+    seriamos
+    seriais
+    serian
+    era
+    eras
+    eramos
+    erais
+    eran
+    fui
+    fuiste
+    fue
+    fuimos
+    fuisteis
+    fueron
+    fuera
+    fueras
+    fueramos
+    fuerais
+    fueran
+    fuese
+    fueses
+    fuesemos
+    fueseis
+    fuesen
+    siendo
+    sido
+    <!-- sed also means 'thirst' -->
+    
+    <!-- forms of tener, to have (not including the infinitive): -->
+    tengo
+    tienes
+    tiene
+    tenemos
+    teneis
+    tienen
+    tenga
+    tengas
+    tengamos
+    tengais
+    tengan
+    tendre
+    tendras
+    tendra
+    tendremos
+    tendreis
+    tendran
+    tendria
+    tendrias
+    tendriamos
+    tendriais
+    tendrian
+    tenia
+    tenias
+    teniamos
+    teniais
+    tenian
+    tuve
+    tuviste
+    tuvo
+    tuvimos
+    tuvisteis
+    tuvieron
+    tuviera
+    tuvieras
+    tuvieramos
+    tuvierais
+    tuvieran
+    tuviese
+    tuvieses
+    tuviesemos
+    tuvieseis
+    tuviesen
+    teniendo
+    tenido
+    tenida
+    tenidos
+    tenidas
+    tened
+  </value>
+</property>
+
+</configuration>
