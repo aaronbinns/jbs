@@ -124,8 +124,9 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, MapWritable>
     typeFilter.setAllowed( allowedTypes );
     typeFilter.setTypeNormalizer( normalizer );
 
-    writer.setFilter( "type",   typeFilter );
-    writer.setFilter( "robots", new RobotsFilter( ) );
+    writer.setFilter( "reqFields", new RequiredFieldsFilter( ) );
+    writer.setFilter( "type",      typeFilter );
+    writer.setFilter( "robots",    new RobotsFilter( ) );
     
     Map<String,FieldHandler> handlers = new HashMap<String,FieldHandler>( );
     handlers.put( "url"       , new SimpleFieldHandler( "url",        Field.Store.YES, Field.Index.NO ) );
