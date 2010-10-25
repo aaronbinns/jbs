@@ -78,6 +78,11 @@ public class TypeNormalizer
   {
     String type = properties.get( "type" );
 
+    // Chop off anything after a ';' character.  This is
+    // for stuff like: "text/html; charset=utf-8"
+    int p = type.indexOf( ';' );
+    if ( p >= 0 ) type = type.substring( 0, p ).trim();
+
     if ( this.aliases != null && this.aliases.containsKey( type ) )
       {
         type = this.aliases.get( type );
