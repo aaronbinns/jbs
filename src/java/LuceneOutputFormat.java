@@ -54,6 +54,7 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, MapWritable>
     indexer.setTermIndexInterval( job.getInt("indexer.termIndexInterval", 128) );
     indexer.setMaxFieldLength   ( job.getInt("indexer.max.tokens", Integer.MAX_VALUE) );
     indexer.setUseCompoundFile  ( false );
+    indexer.setSimilarity       ( new WebSimilarity( ) );
 
     LuceneDocumentWriter docWriter = buildDocumentWriter( job, indexer );
     
