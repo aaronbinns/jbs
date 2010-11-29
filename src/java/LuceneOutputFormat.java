@@ -133,6 +133,7 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, MapWritable>
     handlers.put( "title"     , new SimpleFieldHandler( "title",      Field.Store.YES, Field.Index.ANALYZED ) );
     handlers.put( "length"    , new SimpleFieldHandler( "length",     Field.Store.YES, Field.Index.NO ) );
     handlers.put( "collection", new SimpleFieldHandler( "collection", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
+    handlers.put( "boiled"    , new SimpleFieldHandler( "boiled",     Field.Store.YES, Field.Index.ANALYZED ) );
     handlers.put( "content"   , new BodyHandler( ) );
     handlers.put( "date"      , new DateHandler( ) );
     handlers.put( "site"      , new SiteHandler( ) );
