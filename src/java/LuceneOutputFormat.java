@@ -128,13 +128,15 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, MapWritable>
     writer.setFilter( "type",      typeFilter );
     writer.setFilter( "robots",    new RobotsFilter( ) );
     
+    int textMaxLength = job.getInt( "indexer.text.maxlength", TextHandler.MAX_LENGTH );
+
     Map<String,FieldHandler> handlers = new HashMap<String,FieldHandler>( );
     handlers.put( "url"       , new SimpleFieldHandler( "url",        Field.Store.YES, Field.Index.NO ) );
     handlers.put( "title"     , new SimpleFieldHandler( "title",      Field.Store.YES, Field.Index.ANALYZED ) );
     handlers.put( "length"    , new SimpleFieldHandler( "length",     Field.Store.YES, Field.Index.NO ) );
     handlers.put( "collection", new SimpleFieldHandler( "collection", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
-    handlers.put( "boiled"    , new SimpleFieldHandler( "boiled",     Field.Store.YES, Field.Index.ANALYZED ) );
-    handlers.put( "content"   , new BodyHandler( ) );
+    handlers.put( "content"   , new TextHandler( "content", "content_parsed", textMaxLength ) );
+    handlers.put( "boiled"    , new TextHandler( "boiled" ,                   textMaxLength ) );
     handlers.put( "date"      , new DateHandler( ) );
     handlers.put( "site"      , new SiteHandler( ) );
     handlers.put( "type"      , new TypeHandler( normalizer ) );  
