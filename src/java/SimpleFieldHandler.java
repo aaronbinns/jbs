@@ -25,7 +25,14 @@ public class SimpleFieldHandler implements FieldHandler
 
   public void handle( Document doc, DocumentProperties properties )
   {
-    doc.add( new Field( name, properties.get( key ), store, index ) );
+    String value = properties.get( key ).trim( );
+    
+    if ( value.length( ) < 1 )
+      {
+        return ;
+      }
+
+    doc.add( new Field( name, value, store, index ) );
   }
 
 }
