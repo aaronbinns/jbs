@@ -1,4 +1,4 @@
-<project name="lucene" default="all" basedir=".">
+<project name="jbs" default="all" basedir=".">
 
   <property name="src.dir"   value="src" />
   <property name="lib.dir"   value="lib"      />
