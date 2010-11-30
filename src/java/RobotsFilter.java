@@ -17,13 +17,15 @@
 import java.io.*;
 import java.net.*;
 
-
+/**
+ * Simple DocumentFilter that filters out robots and favicon URLs.
+ */
 public class RobotsFilter implements DocumentFilter
 {
 
   public boolean isAllowed( DocumentProperties properties )
   {
-    String url  = properties.get( "url"  );
+    String url  = properties.get( "url" );
     
     try
       {

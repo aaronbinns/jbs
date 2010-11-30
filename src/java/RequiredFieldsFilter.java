@@ -17,13 +17,16 @@
 import java.io.*;
 import java.net.*;
 
-
+/**
+ * Simple DocumentFilter that ensures certain document properties have
+ * non-empty values.  For example, a URL.
+ */
 public class RequiredFieldsFilter implements DocumentFilter
 {
 
   public boolean isAllowed( DocumentProperties properties )
   {
-    String url = properties.get( "url"  );
+    String url = properties.get( "url" );
     
     return url.length() > 0;
   }

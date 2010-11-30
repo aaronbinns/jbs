@@ -14,7 +14,13 @@
  * permissions and limitations under the License.
  */
 
-
+/**
+ * Interface for family of implementors which filter out documents
+ * based on arbitrary rules.
+ *
+ * The DocumentProperties are given to the filter, which returns true
+ * if the document is allowed and false if not.
+ */
 public interface DocumentFilter
 {
   public boolean isAllowed( DocumentProperties properties );

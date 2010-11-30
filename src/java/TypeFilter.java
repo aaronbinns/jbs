@@ -17,6 +17,13 @@
 import java.io.*;
 import java.util.*;
 
+/**
+ * Simple DocumentFilter which only allows documents with specific
+ * types.  Types are normalized before they are checked.  A default
+ * list is provided based on IA experience.
+ *
+ * If an empty list is specified, then all types are allowed.
+ */
 public class TypeFilter implements DocumentFilter
 {
   public static final String[] DEFAULT_ALLOWED = 
