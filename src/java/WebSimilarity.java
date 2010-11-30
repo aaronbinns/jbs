@@ -17,7 +17,7 @@
 import org.apache.lucene.search.DefaultSimilarity;
 
 /** 
- * Similarity implementatation appropriate for web searching.
+ * Lucene Similarity implementatation appropriate for web searching.
  * Intitially, taken from NutchSimilarity, then tweaked.
  */ 
 public class WebSimilarity extends DefaultSimilarity  
