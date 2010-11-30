@@ -20,7 +20,32 @@ import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.fs.*;
 
-
+/**
+ * <p>Hadoop InputFormat implementation that reads a Text key from an
+ * input file and returns the key paired with a token rather than the
+ * value stored in the file.  That is:
+ * <code>
+ *   &lt;key1, TRUE&gt;
+ *   &lt;key2, TRUE&gt;
+ *   &lt;key3, TRUE&gt;
+ *   &lt;key4, TRUE&gt;
+ *   ...
+ * </code></p>
+ * <p>In practice, we might be able to use this for performing
+ * de-duplication via Hadoop.  If we have an existing NutchWAX
+ * segment (or similar) containing the existing records, then
+ * when we compare a new WARC file's records to find duplicates,
+ * we don't need the entire record in the segment, just the
+ * key.</p>
+ * <p>This ControlInputFormat class could be used to read the existing
+ * segment, returning just the keys paired with an insignificant
+ * token.  The keys could be combined via the MapReduce framework with
+ * the K-V pairs in the newly added WARC and duplicates could be found
+ * and/or eliminated.</p>
+ * <p><strong>NOTE:</strong> This class is currently experimental and
+ * is not used in production.  If it's ultimately not useful, it will
+ * likely be removed.</p>
+ */
 public class ControlInputFormat extends SequenceFileInputFormat<Text,GenericWritable>
 {
   public static class ControlMarker extends BooleanWritable
@@ -66,8 +91,8 @@ public class ControlInputFormat extends SequenceFileInputFormat<Text,GenericWrit
           {
             public synchronized boolean next( Text key, GenericWritable value ) throws IOException 
             {
-              System.out.println( "SequenceFileRecordReader.next( " + key + ", " + value + " )" );
-              System.out.println( "  path: " + fSplit.getPath( ) );
+              //System.out.println( "SequenceFileRecordReader.next( " + key + ", " + value + " )" );
+              //System.out.println( "  path: " + fSplit.getPath( ) );
               
               boolean res = reader.next(key, w);
               if ( isControl( fSplit.getPath( ) ) )
