@@ -28,7 +28,15 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
 
-
+/**
+ * The LuceneDocumentWriter converts DocumentProperties into a Lucene
+ * Document then adds that document to the given index.
+ *
+ * Most of the interesting work is done by the DocumentFilters
+ * and FieldHandlers.  The filters determine whether or not
+ * the document is allowed and the various handlers convert
+ * the DocumentProperties into Lucene Fields.
+ */
 public class LuceneDocumentWriter extends DocumentWriterBase
 {
   private IndexWriter indexer;
