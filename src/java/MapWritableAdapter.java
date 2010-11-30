@@ -22,8 +22,11 @@ import org.apache.hadoop.util.*;
 
 
 /**
- * Handy utility class to wrap a MapWritable so it can be used with
- * DocumentFilters and stuff.
+ * Adapts a MapWritable to a DocumentProperties.
+ *
+ * Note that the two conventions described in the DocumentProperties
+ * interface are observed: unknown keys map to an empty string value,
+ * and the value it trim()'d before returning.
  */
 public class MapWritableAdapter implements DocumentProperties
 {

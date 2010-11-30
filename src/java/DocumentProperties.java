@@ -14,6 +14,16 @@
  * permissions and limitations under the License.
  */
 
+/**
+ * Simple interface for any number of implementors to provide Map-like
+ * functionality returning a value for a key.
+ *
+ * By convention, for any key not found, an empty string ("") is
+ * returned.
+ *
+ * Also, all strings returned are assumed to be trim()'d before being
+ * returned.
+ */
 public interface DocumentProperties
 {
   public String get( String key );
