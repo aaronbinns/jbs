@@ -21,7 +21,17 @@ import java.util.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 
-
+/**
+ * Custom FieldHandler implementation for site.
+ *
+ * The site field not stored and it is indexed as a single token.  In
+ * addition, we apply some very rudimentary canonicalization, such as
+ * stripping a leading 'www[0-9]' and a special rule for Photobucket.
+ *
+ * Ideally we would apply more sophisticated rules, perhaps even
+ * collection-specific, to better determine what the "site" is for a
+ * URL.
+ */ 
 public class SiteHandler implements FieldHandler
 {
 

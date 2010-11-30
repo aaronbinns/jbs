@@ -21,7 +21,12 @@ import java.util.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 
-
+/**
+ * Custom FieldHandler implementation for type.
+ *
+ * First, the type is normalized, then it is stored and is indexed as
+ * a single token.
+ */
 public class TypeHandler implements FieldHandler
 {
   TypeNormalizer normalizer;

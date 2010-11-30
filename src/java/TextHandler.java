@@ -21,7 +21,22 @@ import java.util.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 
-
+/**
+ * Custom FieldHandler implementation for "text".
+ *
+ * This class was originally written to handle the "body" of the
+ * document, but then we added the use of BoilerPipe which meant
+ * that we had two "bodies".  So the class evolved to handle
+ * general "text" fields.
+ *
+ * The field name can be given, as well as a maximum length to
+ * enforce.  The default maximum is 100,000 characters.
+ *
+ * The field is indexed and stored.  It is stored in compressed form
+ * if the compression actually makes it smaller.  For very short
+ * strings (like 1-3 words), the compressed form might actually be
+ * larger.
+ */
 public class TextHandler implements FieldHandler
 {
   public static final int MAX_LENGTH = 100000;

@@ -21,7 +21,17 @@ import java.util.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 
-
+/**
+ * Custom FieldHandler implementation for dates.
+ *
+ * The date information in the DocumentProperties is stored as a
+ * whitespace-separated list of 14-digit date values.  That value is
+ * tokenized, and converted to a list of date values.
+ *
+ * The full 14-digit value is stored, but not indexed.  Then the date
+ * is added as a Lucene field multiple times, with different
+ * precisions: YYYY and YYYYMM.  These shortened forms are not stored.
+ */
 public class DateHandler implements FieldHandler
 {
 

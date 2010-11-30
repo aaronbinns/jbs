@@ -17,7 +17,14 @@
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 
-
+/**
+ * Straightforward implementation of a FieldHandler that gets the
+ * field value from the DocumentProperties via the specified key, then
+ * adds it to the Document using the given name, store and index
+ * values.
+ *
+ * NOTE: If a field value is empty, it is not added to the Document.
+ */
 public class SimpleFieldHandler implements FieldHandler
 {
   String name;
