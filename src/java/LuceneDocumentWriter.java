@@ -22,12 +22,6 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.util.*;
-
 /**
  * The LuceneDocumentWriter converts DocumentProperties into a Lucene
  * Document then adds that document to the given index.
