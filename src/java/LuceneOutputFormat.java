@@ -31,10 +31,15 @@ import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
 
 /**
- * This class is derived from Nutch's LuceneOutputFormat class.  It does
- * primarily two things of interest:
+ * This class is inspired by Nutch's LuceneOutputFormat class.  It does
+ * primarily three things of interest:
+ *
  *  1. Creates a Lucene index in a local (not HDFS) ${temp} directory,
  *     into which the documents are added.
+ *
+ *  2. Creates a LuceneDocumentWriter and delegates creation and
+ *     indexing of Lucene documents to it.
+ *
  *  2. Closes that index and copies it into HDFS.
  */
 public class LuceneOutputFormat extends FileOutputFormat<Text, MapWritable>
@@ -86,7 +91,9 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, MapWritable>
       this.docWriter = docWriter;
     }
 
-    // Delegate to docWriter
+    /**
+     * Delegate to docWriter.
+     */
     public void write( Text key, MapWritable properties )
       throws IOException
     {
@@ -107,6 +114,10 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, MapWritable>
     
   }
   
+  /**
+   * Factory method which constructs the LuceneDocumentWriter.  Much
+   * of the configuration can be controlled via the Hadoop JobConf.
+   */
   protected LuceneDocumentWriter buildDocumentWriter( JobConf job, IndexWriter indexer )
   {
     CustomAnalyzer analyzer = new CustomAnalyzer( job.getBoolean( "indexer.analyzer.custom.omitNonAlpha", true ),
