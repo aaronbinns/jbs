@@ -28,7 +28,10 @@ import org.apache.nutch.parse.ParseData;
 import org.apache.nutch.parse.ParseText;
 import org.apache.nutch.metadata.Metadata;
 
-
+/** 
+ * Command-line driver and MapReduce code for creating a Lucene index
+ * for one or more NutchWAX segments and text revisit/.dup files.
+ */
 public class Indexer extends Configured implements Tool
 {
   /**
@@ -57,7 +60,7 @@ public class Indexer extends Configured implements Tool
   }
 
   /**
-   * Mapper that can handle Writables from a Nutch(WAX).
+   * Mapper that can handle Writables from Nutch(WAX) segments.
    */
   public static class Map extends MapReduceBase implements Mapper<Text, Writable, Text, MapWritable>
   {
@@ -113,21 +116,15 @@ public class Indexer extends Configured implements Tool
     {
       MapWritable m = new MapWritable( );
 
-      // FIXME: This looks pretty bogus...just merging all the
-      // mappings from the MapWritables into one.  We should take the
-      // [k,v] pairs from each MapWritable and merge them
+      // Take the [k,v] pairs from each MapWritable and merge them
       // intelligently.  In particular the dates.  E.g. we might have
       //   MapWritable1 = [ "date" => "20100501..."
       //   MapWritable2 = [ "date" => "20081219..."
       // We want to have
-      //   Merged       = [ "date" => ["20100501...","20081219..."]
+      //   Merged       = [ "date" => ["20100501...","20081219..."] ]
       // with one key "date" and multiple values.
-      // The way the below code acts is just to add both the mappings
-      // to the Merged MapWritable, which means only the last one will
-      // be kept.
       while ( values.hasNext( ) )
         {
-          // m.putAll( values.next( ) );
           MapWritable properties = values.next( );
 
           for ( Writable writableKey : properties.keySet( ) )
@@ -185,7 +182,8 @@ public class Indexer extends Configured implements Tool
     // For debugging, sometimes easier to inspect Hadoop mapfile format.
     // conf.setOutputFormat(MapFileOutputFormat.class);
     
-    // Assume arg[1-n] is a Nutch(WAX) segment or a text .dup file.
+    // Add the input paths as either NutchWAX segment directories or
+    // text .dup files.
     for ( int i = 1; i < args.length ; i++ )
       {
         Path p = new Path( args[i] );
