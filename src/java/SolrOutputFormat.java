@@ -37,6 +37,37 @@ public class SolrOutputFormat extends FileOutputFormat<Text, MapWritable>
 
     SolrDocumentWriter solrDocWriter = new SolrDocumentWriter( new URL( serverUrl ) );
 
+    TypeNormalizer normalizer = new TypeNormalizer( );
+    Map<String,String> aliases = normalizer.parseAliases( job.get( "indexer.typeNormalizer.aliases", "" ) );
+
+    if ( job.getBoolean( "indexer.typeNormalizer.useDefaults", true ) )
+      {
+        Map<String,String> defaults = normalizer.getDefaultAliases( );
+        defaults.putAll( aliases );
+
+        aliases = defaults;
+      }
+    normalizer.setAliases( aliases );
+
+    TypeFilter typeFilter = new TypeFilter( );
+    Set<String> allowedTypes = typeFilter.parse( job.get( "indexer.typeFilter.allowed", "" ) );
+
+    if ( job.getBoolean( "indexer.typeFilter.useDefaults", true ) )
+      {
+        Set<String> defaults = typeFilter.getDefaultAllowed( );
+        defaults.addAll( allowedTypes );
+
+        allowedTypes = defaults;
+      }
+    typeFilter.setAllowed( allowedTypes );
+    typeFilter.setTypeNormalizer( normalizer );
+
+    solrDocWriter.setFilter( "reqFields", new RequiredFieldsFilter( ) );
+    solrDocWriter.setFilter( "type",      typeFilter );
+    solrDocWriter.setFilter( "robots",    new RobotsFilter( ) );    
+
+    solrDocWriter.setTypeNormalizer( normalizer );
+
     return new SolrRecordWriter( solrDocWriter );
   }
   
