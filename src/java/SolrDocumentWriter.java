@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 public class SolrDocumentWriter extends DocumentWriterBase
 {
   private SolrServer server;
+  private TypeNormalizer typeNormalizer;
 
   public SolrDocumentWriter( URL url )
     throws IOException
@@ -35,17 +36,33 @@ public class SolrDocumentWriter extends DocumentWriterBase
     this.server = new CommonsHttpSolrServer( url );
   }
 
+  public void setTypeNormalizer( TypeNormalizer typeNormalizer )
+  {
+    this.typeNormalizer = typeNormalizer;
+  }
+
   public void add( String key, DocumentProperties properties )
     throws IOException
   {
-    // TODO: Create Solr XML document, the post it.
+    for ( DocumentFilter filter : filters.values() )
+      {
+        if ( ! filter.isAllowed( properties ) )
+          {
+            return ;
+          }
+      }
+    
+    // Create Solr XML document, add the fields, then add the document
+    // to the index.
     SolrInputDocument doc = new SolrInputDocument();
 
     doc.addField( "id",  key );
     
-    for ( String p : new String[] { "url", "title", "length", "collection", "boiled", "type" } )
+    for ( String p : new String[] { "url", "title", "length", "collection", "boiled" } )
       {
-        doc.addField( p, properties.get( p ) );
+        String value = properties.get( p );
+
+        if ( value.length() > 0 ) doc.addField( p, properties.get( p ) );
       }
 
     doc.addField( "content", properties.get( "content_parsed" ) );
@@ -59,7 +76,7 @@ public class SolrDocumentWriter extends DocumentWriterBase
                               date.substring(8,10) + ":" + date.substring(10,12) + ":" + date.substring(12,14) + "Z" );
       }
 
-    // Special handling for site
+    // Special handling for site and tld
     try
       {
         String url = properties.get( "url" );
@@ -91,6 +108,11 @@ public class SolrDocumentWriter extends DocumentWriterBase
       {
         // Rut-roh.
       }
+
+    // Special handling for type
+    String type = this.typeNormalizer.normalize( properties );
+    
+    doc.addField( "type", type );
 
     // Finally, add the document.
     try
