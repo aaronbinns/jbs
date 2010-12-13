@@ -180,7 +180,7 @@ public class Indexer extends Configured implements Tool
     // LuceneOutputFormat writes to Lucene index.
     // conf.setOutputFormat( LuceneOutputFormat.class );
     // conf.setOutputFormat( SolrOutputFormat.class );
-    conf.setOutputFormat( Class.forName( confg.get( "indexer.outputformat.class", "LuceneOutputFormat" ) ) );
+    conf.setOutputFormat( (Class) Class.forName( conf.get( "indexer.outputformat.class", "LuceneOutputFormat" ) ) );
 
     // For debugging, sometimes easier to inspect Hadoop mapfile format.
     // conf.setOutputFormat(MapFileOutputFormat.class);
