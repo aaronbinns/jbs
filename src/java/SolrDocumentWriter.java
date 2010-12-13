@@ -43,7 +43,7 @@ public class SolrDocumentWriter extends DocumentWriterBase
 
     doc.addField( "id",  key );
     
-    for ( String p : new String[] { "url", "title", "length", "collection", "boiled", "site", "type" } )
+    for ( String p : new String[] { "url", "title", "length", "collection", "boiled", "type" } )
       {
         doc.addField( p, properties.get( p ) );
       }
@@ -59,6 +59,40 @@ public class SolrDocumentWriter extends DocumentWriterBase
                               date.substring(8,10) + ":" + date.substring(10,12) + ":" + date.substring(12,14) + "Z" );
       }
 
+    // Special handling for site
+    try
+      {
+        String url = properties.get( "url" );
+        
+        String site = (new URL( url)).getHost( );
+        
+        // Strip off any "www[0-9]*." header.
+        site = site.toLowerCase().replaceFirst( "^www[0-9]*[.]", "" );
+        
+        // Special rule for Photobucket
+        site = site.replaceAll( "^[a-z0-9]+.photobucket.com$", "photobucket.com" );
+        
+        doc.addField( "site", site );
+
+        // Add the tld: com, org, net, uk, fr, etc.
+        if ( site.length() > 0 
+             && site.charAt(0) != '['                             // Not an IPv6 address
+             && ! site.matches("(?:[0-9]{1,3}[.]){3}[0-9]{1,3}")  // Not an IPv4 address
+             )
+          {
+            String[] s = site.replaceFirst("[.]$", "").split( "[.]" );
+
+            String tld = s[s.length-1];
+
+            doc.addField( "tld", tld );
+          }
+      }
+    catch ( MalformedURLException mue )
+      {
+        // Rut-roh.
+      }
+
+    // Finally, add the document.
     try
       {
         this.server.add( doc );
