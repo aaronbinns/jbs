@@ -46,10 +46,29 @@ public class Indexer extends Configured implements Tool
       try
         {
           String[] line = value.toString().trim().split("\\s+");
-          
-          Text newKey   = new Text( line[0] + " " + line[1] );
-          Text newValue = new Text( line[2] );
-          
+
+          Text newKey   = null;
+          Text newValue = null;
+
+          switch ( line.length )
+            {
+              // Handle lines from "dup" files.
+            case 3:
+              newKey   = new Text( line[0] + " " + line[1] );
+              newValue = new Text( line[2] );
+              break ;
+
+              // Handle lines from "cdx" files.
+            case 9:
+              newKey   = new Text( line[0] + " sha1:" + line[5] );
+              newValue = new Text( line[1] );
+              break ;
+
+            default:
+              // Skip it
+              return ;
+            }
+
           output.collect( newKey, newValue );     
         }
       catch ( Exception e )
