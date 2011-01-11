@@ -53,6 +53,8 @@
       <fileset dir="."
                includes="${lib.dir}/*.jar"
                excludes="${lib.dir}/hadoop-*-core.jar" />
+      <fileset dir="." 
+               includes="${lib.dir}/profiles/**" />
     </jar>
   </target>
 
