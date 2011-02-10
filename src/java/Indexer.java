@@ -177,7 +177,7 @@ public class Indexer extends Configured implements Tool
 
   public int run( String[] args ) throws Exception
   {
-    if (args.length < 2)
+    if ( args.length < 2 )
       {
         System.err.println( "Indexer <output> <input>..." );
         return 1;
@@ -189,17 +189,14 @@ public class Indexer extends Configured implements Tool
     conf.setOutputKeyClass(Text.class);
     conf.setOutputValueClass(MapWritable.class);
     
-    conf.setMapperClass(NutchMapper.class);
     conf.setCombinerClass(Reduce.class);
     conf.setReducerClass(Reduce.class);
     
-    // FIXME: Do we need this when using the MultipleInputs class below?
-    //        Looks like the answer is no.
-    // conf.setInputFormat(SequenceFileInputFormat.class);
-
-    // LuceneOutputFormat writes to Lucene index.
-    // conf.setOutputFormat( LuceneOutputFormat.class );
-    // conf.setOutputFormat( SolrOutputFormat.class );
+    // Choose the outputformat to either merge or index the records
+    //   LuceneOutputFormat  - writes to Lucene index.
+    //   SolrOutputFormat    - sends documents to external Solr server
+    //   MapFileOutputFormat - merges documents into Hadoop MapFile
+    //                         org.apache.hadoop.mapred.MapFileOutputFormat
     conf.setOutputFormat( (Class) Class.forName( conf.get( "indexer.outputformat.class", "LuceneOutputFormat" ) ) );
 
     // For debugging, sometimes easier to inspect Hadoop mapfile format.
