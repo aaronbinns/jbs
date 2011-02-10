@@ -104,12 +104,12 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, MapWritable>
       throws IOException
     {
       // Optimize and close the IndexWriter
-      indexer.optimize();
+      // indexer.optimize();
       indexer.close();
       
       // Copy the index from ${temp} to HDFS and touch a "done" file.
-      fs.completeLocalOutput(perm, temp);
-      fs.createNewFile(new Path(perm, "done"));
+      fs.completeLocalOutput( perm, temp );
+      fs.createNewFile( new Path( perm, "done" ) );
     }
     
   }
@@ -119,13 +119,46 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, MapWritable>
    * of the configuration can be controlled via the Hadoop JobConf.
    */
   protected LuceneDocumentWriter buildDocumentWriter( JobConf job, IndexWriter indexer )
+    throws IOException
   {
     CustomAnalyzer analyzer = new CustomAnalyzer( job.getBoolean( "indexer.analyzer.custom.omitNonAlpha", true ),
                                                   new HashSet<String>( Arrays.asList( job.get( "indexer.analyzer.stopWords", "" ).trim().split( "\\s+" ) ) ) );
     
     LuceneDocumentWriter writer = new LuceneDocumentWriter( indexer, analyzer );
 
+    IDNHelper      idnHelper  = buildIDNHelper( job );
+    TypeNormalizer normalizer = buildTypeNormalizer( job );
+    TypeFilter     typeFilter = buildTypeFilter( job, normalizer );
+
+    writer.setFilter( "reqFields", new RequiredFieldsFilter( ) );
+    writer.setFilter( "type",      typeFilter );
+    writer.setFilter( "robots",    new RobotsFilter( ) );
+
+    int textMaxLength = job.getInt( "indexer.text.maxlength", TextHandler.MAX_LENGTH );
+
+    Map<String,FieldHandler> handlers = new HashMap<String,FieldHandler>( );
+    handlers.put( "url"       , new SimpleFieldHandler( "url",        Field.Store.YES, Field.Index.NO ) );
+    handlers.put( "title"     , new SimpleFieldHandler( "title",      Field.Store.YES, Field.Index.ANALYZED ) );
+    handlers.put( "length"    , new SimpleFieldHandler( "length",     Field.Store.YES, Field.Index.NO ) );
+    handlers.put( "collection", new SimpleFieldHandler( "collection", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
+    handlers.put( "content"   , new TextHandler( "content", "content_parsed", textMaxLength ) );
+    handlers.put( "boiled"    , new TextHandler( "boiled" ,                   textMaxLength ) );
+    handlers.put( "date"      , new DateHandler( ) );
+    handlers.put( "site"      , new SiteHandler( idnHelper ) );
+    handlers.put( "type"      , new TypeHandler( normalizer ) );  
+
+    writer.setHandlers( handlers );
+    
+    return writer;
+  }
+
+  /**
+   * Build a TypeNormalizer object using configuration information in the JobConf.
+   */
+  protected TypeNormalizer buildTypeNormalizer( JobConf job )
+  {
     TypeNormalizer normalizer = new TypeNormalizer( );
+
     Map<String,String> aliases = normalizer.parseAliases( job.get( "indexer.typeNormalizer.aliases", "" ) );
 
     if ( job.getBoolean( "indexer.typeNormalizer.useDefaults", true ) )
@@ -137,39 +170,61 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, MapWritable>
       }
     normalizer.setAliases( aliases );
 
-    TypeFilter typeFilter = new TypeFilter( );
-    Set<String> allowedTypes = typeFilter.parse( job.get( "indexer.typeFilter.allowed", "" ) );
+    return normalizer;
+  }
 
+  /**
+   * Build a TypeFilter object using configuration information in the JobConf.
+   */
+  protected TypeFilter buildTypeFilter( JobConf job, TypeNormalizer normalizer )
+  {
+    TypeFilter typeFilter = new TypeFilter( );
+
+    Set<String> allowedTypes = typeFilter.parse( job.get( "indexer.typeFilter.allowed", "" ) );
+    
     if ( job.getBoolean( "indexer.typeFilter.useDefaults", true ) )
       {
         Set<String> defaults = typeFilter.getDefaultAllowed( );
         defaults.addAll( allowedTypes );
-
+        
         allowedTypes = defaults;
       }
     typeFilter.setAllowed( allowedTypes );
     typeFilter.setTypeNormalizer( normalizer );
-
-    writer.setFilter( "reqFields", new RequiredFieldsFilter( ) );
-    writer.setFilter( "type",      typeFilter );
-    writer.setFilter( "robots",    new RobotsFilter( ) );
     
-    int textMaxLength = job.getInt( "indexer.text.maxlength", TextHandler.MAX_LENGTH );
+    return typeFilter;
+  }
 
-    Map<String,FieldHandler> handlers = new HashMap<String,FieldHandler>( );
-    handlers.put( "url"       , new SimpleFieldHandler( "url",        Field.Store.YES, Field.Index.NO ) );
-    handlers.put( "title"     , new SimpleFieldHandler( "title",      Field.Store.YES, Field.Index.ANALYZED ) );
-    handlers.put( "length"    , new SimpleFieldHandler( "length",     Field.Store.YES, Field.Index.NO ) );
-    handlers.put( "collection", new SimpleFieldHandler( "collection", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
-    handlers.put( "content"   , new TextHandler( "content", "content_parsed", textMaxLength ) );
-    handlers.put( "boiled"    , new TextHandler( "boiled" ,                   textMaxLength ) );
-    handlers.put( "date"      , new DateHandler( ) );
-    handlers.put( "site"      , new SiteHandler( ) );
-    handlers.put( "type"      , new TypeHandler( normalizer ) );  
+  /**
+   * Build an IDNHelper object using configuration information in the JobConf.
+   */
+  protected IDNHelper buildIDNHelper( JobConf job )
+    throws IOException
+  {
+    IDNHelper helper = new IDNHelper( );
 
-    writer.setHandlers( handlers );
+    if ( job.getBoolean( "indexer.idnHelper.useDefaults", true ) )
+      {
+        InputStream is = SiteHandler.class.getClassLoader( ).getResourceAsStream( "effective_tld_names.dat" );
+        
+        if ( is == null )
+          {
+            throw new RuntimeException( "Cannot load default tld rules: effective_tld_names.dat" );
+          }
+        
+        Reader reader = new InputStreamReader( is, "utf-8" );
+       
+        helper.addRules( reader );
+      }
+
+    String moreRules = job.get( "indexer.idnHelper.moreRules", "" );
     
-    return writer;
+    if ( moreRules.length() > 0 )
+      {
+        helper.addRules( new StringReader( moreRules ) );
+      }
+
+    return helper;
   }
 
     
