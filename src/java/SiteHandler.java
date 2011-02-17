@@ -24,13 +24,10 @@ import org.apache.lucene.index.*;
 /**
  * Custom FieldHandler implementation for site.
  *
- * The site field not stored and it is indexed as a single token.  In
- * addition, we apply some very rudimentary canonicalization, such as
- * stripping a leading 'www[0-9]' and a special rule for Photobucket.
+ * The site field not stored and it is indexed as a single token.
  *
- * Ideally we would apply more sophisticated rules, perhaps even
- * collection-specific, to better determine what the "site" is for a
- * URL.
+ * The IDNHelper is used to determine the domain of the
+ * given URL.
  */ 
 public class SiteHandler implements FieldHandler
 {
@@ -48,7 +45,6 @@ public class SiteHandler implements FieldHandler
 
   public void handle( Document doc, DocumentProperties properties )
   {
-    // Special handling for site
     try
       {
         URL u = new URL( properties.get( "url" ) );
@@ -71,7 +67,8 @@ public class SiteHandler implements FieldHandler
       }
     catch ( MalformedURLException mue )
       {
-        // Rut-roh.
+        // Very strange for the URL of a crawled page to be malformed.
+        // But, in that case, just skip it.
       }
   }
 
