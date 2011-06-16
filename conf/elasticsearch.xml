@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<configuration>
+
+<property>
+  <name>indexer.outputformat.class</name>
+  <value>ElasticSearchOutputFormat</value>
+ </property>
+
+</configuration>

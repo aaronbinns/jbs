@@ -14,6 +14,7 @@
  * permissions and limitations under the License.
  */
 
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.DefaultSimilarity;
 
 /** 
@@ -25,8 +26,10 @@ public class WebSimilarity extends DefaultSimilarity
   private static final int MIN_CONTENT_LENGTH = 1000;
   
   /** Normalize field by length.  Called at index time. */
-  public float lengthNorm( String fieldName, int numTokens )
+  public float computeNorm( String fieldName, FieldInvertState state )
   {
+    int numTokens = state.getLength( );
+
     if ("url".equals(fieldName))
       {
         // URL: prefer short by using linear normalization
