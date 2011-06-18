@@ -68,7 +68,7 @@ public class ElasticSearchDocumentWriter extends DocumentWriterBase
 
     String type = this.typeNormalizer.normalize( properties );
 
-    IndexResponse response = client.prepareIndex( collection, "web", key )
+    IndexResponse response = client.prepareIndex( collection, "web", Long.toHexString( FPGenerator.std64.fp( key ) ) )
         .setSource( jsonBuilder()
                     .startObject()
                       .field( "url",     properties.get( "url"    ) )
