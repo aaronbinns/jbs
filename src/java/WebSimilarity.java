@@ -1,24 +1,29 @@
-/*
- * Copyright 2010 Internet Archive
+/**
+ * This code is derived from the class NutchSimilarity distributed
+ * with Nutch 1.1.  The original license is as follows:
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you
- * may not use this file except in compliance with the License. You
- * may obtain a copy of the License at
+ *   Licensed to the Apache Software Foundation (ASF) under one or
+ *   more contributor license agreements.  See the NOTICE file
+ *   distributed with this work for additional information regarding
+ *   copyright ownership.  The ASF licenses this file to You under the
+ *   Apache License, Version 2.0 (the "License"); you may not use this
+ *   file except in compliance with the License.  You may obtain a
+ *   copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * permissions and limitations under the License.
+ *   Unless required by applicable law or agreed to in writing,
+ *   software distributed under the License is distributed on an "AS
+ *   IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ *   express or implied.  See the License for the specific language
+ *   governing permissions and limitations under the License.
  */
 
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.DefaultSimilarity;
 
 /** 
- * Lucene Similarity implementatation appropriate for web searching.
+ * Similarity implementatation appropriate for web searching.
  * Intitially, taken from NutchSimilarity, then tweaked.
  */ 
 public class WebSimilarity extends DefaultSimilarity  
@@ -36,21 +41,23 @@ public class WebSimilarity extends DefaultSimilarity
         return 1.0f / numTokens;
         
       }
-    else if ("anchor".equals(fieldName))
-      { 
-        // Anchor: prefer more
-        return (float)(1.0/Math.log(Math.E+numTokens)); // use log
-        
-      }
     else if ("content".equals(fieldName))
       {    
         // Content: penalize short, by treating short as longer
-        return super.lengthNorm( fieldName, Math.max(numTokens, MIN_CONTENT_LENGTH) );
+
+        // TODO: Is creating a new FieldInvertState object good, or
+        //       should we modify the existing one?
+        return super.computeNorm( fieldName, new FieldInvertState( state.getPosition(),
+                                                                   Math.max(numTokens, MIN_CONTENT_LENGTH),
+                                                                   state.getNumOverlap(),
+                                                                   state.getOffset(),
+                                                                   state.getBoost() 
+                                                                 ) );
       }
     else
       {
         // use default
-        return super.lengthNorm(fieldName, numTokens);
+        return super.computeNorm(fieldName, state);
       }
   }
   
