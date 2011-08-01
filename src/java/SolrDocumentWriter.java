@@ -17,6 +17,7 @@
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.client.solrj.*;
@@ -28,12 +29,14 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 public class SolrDocumentWriter extends DocumentWriterBase
 {
   private SolrServer server;
+  private Queue<SolrInputDocument> docBuffer;
   private TypeNormalizer typeNormalizer;
 
-  public SolrDocumentWriter( URL url )
+  public SolrDocumentWriter( URL url, int docBufferSize )
     throws IOException
   {
-    this.server = new CommonsHttpSolrServer( url );
+    this.server    = new CommonsHttpSolrServer( url );
+    this.docBuffer = new ArrayBlockingQueue<SolrInputDocument>( docBufferSize );
   }
 
   public void setTypeNormalizer( TypeNormalizer typeNormalizer )
@@ -117,7 +120,15 @@ public class SolrDocumentWriter extends DocumentWriterBase
     // Finally, add the document.
     try
       {
-        this.server.add( doc );
+        if ( ! this.docBuffer.offer( doc ) )
+          {
+            // The buffer is full, send the buffered documents.
+            this.server.add( this.docBuffer );
+
+            // Clear the buffer and add the document.
+            this.docBuffer.clear();
+            this.docBuffer.offer( doc );
+          }
       }
     catch ( SolrServerException sse )
       {
@@ -130,6 +141,10 @@ public class SolrDocumentWriter extends DocumentWriterBase
   {
     try
       {
+        // Send any documents still in the buffer
+        this.server.add( this.docBuffer );
+
+        // Commit the updates.
         this.server.commit();
       }
     catch ( SolrServerException sse )

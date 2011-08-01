@@ -41,9 +41,10 @@ public class SolrOutputFormat extends FileOutputFormat<Text, MapWritable>
                                                           final Progressable progress )
     throws IOException
   {
-    String serverUrl = job.get( "indexer.solr.url", "http://localhost:8983/solr" );
+    String serverUrl  = job.get( "indexer.solr.url", "http://localhost:8983/solr" );
+    int    docBufSize = job.getInt( "indexer.solr.bufSize", 10 );
 
-    SolrDocumentWriter solrDocWriter = new SolrDocumentWriter( new URL( serverUrl ) );
+    SolrDocumentWriter solrDocWriter = new SolrDocumentWriter( new URL( serverUrl ), docBufSize );
 
     TypeNormalizer normalizer = new TypeNormalizer( );
     Map<String,String> aliases = normalizer.parseAliases( job.get( "indexer.typeNormalizer.aliases", "" ) );
