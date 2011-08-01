@@ -133,9 +133,28 @@ public class SolrDocumentWriter extends DocumentWriterBase
             this.docBuffer.offer( doc );
           }
       }
-    catch ( SolrServerException sse )
+    catch ( Exception e )
       {
-        throw new IOException( sse );
+        // If there is a problem sending the group of documents, try
+        // re-sending them one at a time to identify which ones are
+        // the problems.
+        for ( SolrInputDocument sd : this.docBuffer )
+          {
+            try
+              {
+                this.server.add( sd );
+              }
+            catch ( Exception e2 )
+              {
+                System.err.println( "Error adding: " + key );
+                e2.printStackTrace( System.err );
+              }
+          }
+
+        // Now that we've added all that can be added, clear the
+        // buffer and add the most recent doc.
+        this.docBuffer.clear();
+        this.docBuffer.offer( doc );
       }
   }
 
