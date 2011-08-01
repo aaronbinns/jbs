@@ -24,37 +24,51 @@ import org.apache.lucene.index.*;
 /**
  * Custom FieldHandler implementation for site.
  *
- * The site field not stored and it is indexed as a single token.  In
- * addition, we apply some very rudimentary canonicalization, such as
- * stripping a leading 'www[0-9]' and a special rule for Photobucket.
+ * The site field not stored and it is indexed as a single token.
  *
- * Ideally we would apply more sophisticated rules, perhaps even
- * collection-specific, to better determine what the "site" is for a
- * URL.
+ * The IDNHelper is used to determine the domain of the
+ * given URL.
  */ 
 public class SiteHandler implements FieldHandler
 {
+  IDNHelper helper;
+
+  public SiteHandler( )
+  {
+    this( new IDNHelper( ) );
+  }
+
+  public SiteHandler( IDNHelper helper )
+  {
+    this.helper = helper;
+  }
 
   public void handle( Document doc, DocumentProperties properties )
   {
-    // Special handling for site
     try
       {
-        String url = properties.get( "url" );
+        URL u = new URL( properties.get( "url" ) );
 
-        String site = (new URL( url)).getHost( );
+        String domain = this.helper.getDomain( u );
 
-        // Strip off any "www[0-9]*." header.
-        site = site.toLowerCase().replaceFirst( "^www[0-9]*[.]", "" );
+        // If we cannot determine the domain, use the full hostname.
+        // This can happen if the URL uses IP address rather than
+        // hostname.
+        if ( domain == null ) 
+          {
+            domain = u.getHost( );
+          }
+        else
+          {
+            domain = IDN.toUnicode( domain, IDN.ALLOW_UNASSIGNED );
+          }
 
-        // Special rule for Photobucket
-        site = site.replaceAll( "^[a-z0-9]+.photobucket.com$", "photobucket.com" );
-
-        doc.add( new Field( "site", site, Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS) );
+        doc.add( new Field( "site", domain, Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS) );
       }
     catch ( MalformedURLException mue )
       {
-        // Rut-roh.
+        // Very strange for the URL of a crawled page to be malformed.
+        // But, in that case, just skip it.
       }
   }
 

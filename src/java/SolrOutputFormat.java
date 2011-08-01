@@ -24,7 +24,15 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
 
-
+/**
+ * This class is inspired by the technique used in Nutch's
+ * LuceneOutputFormat class.  However, rather than creating a Lucene
+ * index and writing documents to it, we use the SolrJ API to send the
+ * documents to a (remote) Solr server.
+ *
+ * We perform essentially the same type normalization and filtering,
+ * robot filtering, etc. before forming the Solr document.
+ */
 public class SolrOutputFormat extends FileOutputFormat<Text, MapWritable>
 {
   public RecordWriter<Text, MapWritable> getRecordWriter( final FileSystem fs,
@@ -33,9 +41,10 @@ public class SolrOutputFormat extends FileOutputFormat<Text, MapWritable>
                                                           final Progressable progress )
     throws IOException
   {
-    String serverUrl = job.get( "indexer.solr.url", "http://localhost:8983/solr" );
+    String serverUrl  = job.get( "indexer.solr.url", "http://localhost:8983/solr" );
+    int    docBufSize = job.getInt( "indexer.solr.bufSize", 10 );
 
-    SolrDocumentWriter solrDocWriter = new SolrDocumentWriter( new URL( serverUrl ) );
+    SolrDocumentWriter solrDocWriter = new SolrDocumentWriter( new URL( serverUrl ), docBufSize );
 
     TypeNormalizer normalizer = new TypeNormalizer( );
     Map<String,String> aliases = normalizer.parseAliases( job.get( "indexer.typeNormalizer.aliases", "" ) );

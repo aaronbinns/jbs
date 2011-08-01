@@ -21,6 +21,7 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapred.lib.IdentityMapper;
 import org.apache.hadoop.util.*;
 import org.apache.hadoop.mapred.lib.MultipleInputs;
 
@@ -81,7 +82,7 @@ public class Indexer extends Configured implements Tool
   /**
    * Mapper that can handle Writables from Nutch(WAX) segments.
    */
-  public static class Map extends MapReduceBase implements Mapper<Text, Writable, Text, MapWritable>
+  public static class NutchMapper extends MapReduceBase implements Mapper<Text, Writable, Text, MapWritable>
   {
     public void map( Text key, Writable value, OutputCollector<Text, MapWritable> output, Reporter reporter)
       throws IOException
@@ -176,7 +177,7 @@ public class Indexer extends Configured implements Tool
 
   public int run( String[] args ) throws Exception
   {
-    if (args.length < 2)
+    if ( args.length < 2 )
       {
         System.err.println( "Indexer <output> <input>..." );
         return 1;
@@ -188,17 +189,14 @@ public class Indexer extends Configured implements Tool
     conf.setOutputKeyClass(Text.class);
     conf.setOutputValueClass(MapWritable.class);
     
-    conf.setMapperClass(Map.class);
     conf.setCombinerClass(Reduce.class);
     conf.setReducerClass(Reduce.class);
     
-    // FIXME: Do we need this when using the MultipleInputs class below?
-    //        Looks like the answer is no.
-    // conf.setInputFormat(SequenceFileInputFormat.class);
-
-    // LuceneOutputFormat writes to Lucene index.
-    // conf.setOutputFormat( LuceneOutputFormat.class );
-    // conf.setOutputFormat( SolrOutputFormat.class );
+    // Choose the outputformat to either merge or index the records
+    //   LuceneOutputFormat  - writes to Lucene index.
+    //   SolrOutputFormat    - sends documents to external Solr server
+    //   MapFileOutputFormat - merges documents into Hadoop MapFile
+    //                         org.apache.hadoop.mapred.MapFileOutputFormat
     conf.setOutputFormat( (Class) Class.forName( conf.get( "indexer.outputformat.class", "LuceneOutputFormat" ) ) );
 
     // For debugging, sometimes easier to inspect Hadoop mapfile format.
@@ -210,18 +208,34 @@ public class Indexer extends Configured implements Tool
       {
         Path p = new Path( args[i] );
 
-        if ( p.getFileSystem( conf ).isFile( p ) )
+        // Expand any file globs and then check each matching path
+        FileStatus[] files = FileSystem.get( conf ).globStatus( p );
+
+        for ( FileStatus file : files )
           {
-            MultipleInputs.addInputPath( conf, new Path( args[i] ), TextInputFormat.class, RevisitMapper.class );
-          }
-        else
-          {       
-            MultipleInputs.addInputPath( conf, new Path( p, "parse_data" ), SequenceFileInputFormat.class, Map.class );
-            MultipleInputs.addInputPath( conf, new Path( p, "parse_text" ), SequenceFileInputFormat.class, Map.class );
+            if ( file.isDir( ) )
+              {
+                // If it's a directory, then check if it is a Nutch segment, otherwise treat as a SequenceFile.
+                if ( p.getFileSystem( conf ).exists( new Path( file.getPath( ), "parse_data" ) ) )
+                  {
+                    MultipleInputs.addInputPath( conf, new Path( p, "parse_data" ), SequenceFileInputFormat.class, NutchMapper.class );
+                    MultipleInputs.addInputPath( conf, new Path( p, "parse_text" ), SequenceFileInputFormat.class, NutchMapper.class );
+                  }
+                else
+                  {
+                    MultipleInputs.addInputPath( conf, p, SequenceFileInputFormat.class, IdentityMapper.class );
+                  }
+              }
+            else 
+              {
+                // Not a directory, assume it's a cdx/dup text file.
+                MultipleInputs.addInputPath( conf, new Path( args[i] ), TextInputFormat.class, RevisitMapper.class );
+              }
           }
       }
 
     FileOutputFormat.setOutputPath(conf, new Path(args[0]));
+    FileOutputFormat.setCompressOutput( conf, true );
     
     JobClient.runJob(conf);
     

@@ -55,6 +55,7 @@
                excludes="${lib.dir}/hadoop-*-core.jar" />
       <fileset dir="." 
                includes="${lib.dir}/profiles/**" />
+      <fileset file="${lib.dir}/effective_tld_names.dat" />
     </jar>
   </target>
 
