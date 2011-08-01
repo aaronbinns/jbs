@@ -74,8 +74,9 @@ public class SolrOutputFormat extends FileOutputFormat<Text, MapWritable>
     solrDocWriter.setFilter( "reqFields", new RequiredFieldsFilter( ) );
     solrDocWriter.setFilter( "type",      typeFilter );
     solrDocWriter.setFilter( "robots",    new RobotsFilter( ) );    
-
+    
     solrDocWriter.setTypeNormalizer( normalizer );
+    solrDocWriter.setIDNHelper     ( buildIDNHelper( job ) );
 
     return new SolrRecordWriter( solrDocWriter );
   }
@@ -108,4 +109,37 @@ public class SolrOutputFormat extends FileOutputFormat<Text, MapWritable>
         }
     }
   }
+
+  /**
+   * Build an IDNHelper object using configuration information in the JobConf.
+   */
+  protected IDNHelper buildIDNHelper( JobConf job )
+    throws IOException
+  {
+    IDNHelper helper = new IDNHelper( );
+
+    if ( job.getBoolean( "indexer.idnHelper.useDefaults", true ) )
+      {
+        InputStream is = SiteHandler.class.getClassLoader( ).getResourceAsStream( "effective_tld_names.dat" );
+        
+        if ( is == null )
+          {
+            throw new RuntimeException( "Cannot load default tld rules: effective_tld_names.dat" );
+          }
+        
+        Reader reader = new InputStreamReader( is, "utf-8" );
+       
+        helper.addRules( reader );
+      }
+
+    String moreRules = job.get( "indexer.idnHelper.moreRules", "" );
+    
+    if ( moreRules.length() > 0 )
+      {
+        helper.addRules( new StringReader( moreRules ) );
+      }
+
+    return helper;
+  }
+
 }

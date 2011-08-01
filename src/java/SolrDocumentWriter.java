@@ -31,12 +31,18 @@ public class SolrDocumentWriter extends DocumentWriterBase
   private SolrServer server;
   private Queue<SolrInputDocument> docBuffer;
   private TypeNormalizer typeNormalizer;
+  private IDNHelper helper;
 
   public SolrDocumentWriter( URL url, int docBufferSize )
     throws IOException
   {
     this.server    = new CommonsHttpSolrServer( url );
     this.docBuffer = new ArrayBlockingQueue<SolrInputDocument>( docBufferSize );
+  }
+
+  public void setIDNHelper( IDNHelper helper )
+  {
+    this.helper = helper;
   }
 
   public void setTypeNormalizer( TypeNormalizer typeNormalizer )
@@ -79,37 +85,34 @@ public class SolrDocumentWriter extends DocumentWriterBase
                               date.substring(8,10) + ":" + date.substring(10,12) + ":" + date.substring(12,14) + "Z" );
       }
 
-    // Special handling for site and tld
+    // Special handling for site (domain) and tld
     try
       {
-        String url = properties.get( "url" );
-        
-        String site = (new URL( url)).getHost( );
-        
-        // Strip off any "www[0-9]*." header.
-        site = site.toLowerCase().replaceFirst( "^www[0-9]*[.]", "" );
-        
-        // Special rule for Photobucket
-        site = site.replaceAll( "^[a-z0-9]+.photobucket.com$", "photobucket.com" );
-        
-        doc.addField( "site", site );
+        URL u = new URL( properties.get( "url" ) );
 
-        // Add the tld: com, org, net, uk, fr, etc.
-        if ( site.length() > 0 
-             && site.charAt(0) != '['                             // Not an IPv6 address
-             && ! site.matches("(?:[0-9]{1,3}[.]){3}[0-9]{1,3}")  // Not an IPv4 address
-             )
+        String domain = this.helper.getDomain( u );
+        String tld    = null;
+
+        // If we cannot determine the domain, use the full hostname.
+        // This can happen if the URL uses IP address rather than
+        // hostname.
+        if ( domain == null ) 
           {
-            String[] s = site.replaceFirst("[.]$", "").split( "[.]" );
-
-            String tld = s[s.length-1];
-
-            doc.addField( "tld", tld );
+            domain = u.getHost( );
           }
+        else
+          {
+            domain = IDN.toUnicode( domain, IDN.ALLOW_UNASSIGNED );
+            tld    = domain.substring( domain.lastIndexOf( '.' ) + 1 );
+          }
+
+        doc.addField( "site", domain );
+        doc.addField( "tld",  tld    );
       }
     catch ( MalformedURLException mue )
       {
-        // Rut-roh.
+        // Very strange for the URL of a crawled page to be malformed.
+        // But, in that case, just skip it.
       }
 
     // Special handling for type
