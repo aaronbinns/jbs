@@ -79,7 +79,8 @@ public class LanguageIdent extends Configured implements Tool
       }
     else
       {
-        return name;
+        System.out.println( "Not a jar, using: " + url.getPath() );
+        return url.getPath();
       }
   }
 
@@ -200,6 +201,7 @@ public class LanguageIdent extends Configured implements Tool
           }
         else
           {
+            // No need to process the metadata, just the page contents.
             // MultipleInputs.addInputPath( conf, new Path( p, "parse_data" ), SequenceFileInputFormat.class, Map.class );
             MultipleInputs.addInputPath( conf, new Path( p, "parse_text" ), SequenceFileInputFormat.class, Map.class );
           }
