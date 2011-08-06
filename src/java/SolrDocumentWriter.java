@@ -65,9 +65,10 @@ public class SolrDocumentWriter extends DocumentWriterBase
     // to the index.
     SolrInputDocument doc = new SolrInputDocument();
 
-    doc.addField( "id",  key );
+    // Use a 64-bit fingerprint of the URL+digest as the key.
+    doc.addField( "id",  FPGenerator.std64.fp(key) );
     
-    for ( String p : new String[] { "url", "title", "length", "collection", "boiled" } )
+    for ( String p : new String[] { "url", "digest", "title", "length", "collection", "boiled" } )
       {
         String value = properties.get( p );
 
@@ -78,11 +79,14 @@ public class SolrDocumentWriter extends DocumentWriterBase
 
     // Solr requires the date to be in the form: 1995-12-31T23:59:59Z
     // See the Solr schema docs.
-    String date = properties.get( "date" );
-    if ( date.length() == "yyyymmddhhmmss".length() )
+    HashSet<String> dates = new HashSet<String>( Arrays.asList( properties.get("date").split( "\\s+" ) ) );
+    for ( String date : dates )
       {
-        doc.addField( "date", date.substring(0,4)  + "-" + date.substring(4,6)   + "-" + date.substring(6,8)   + "T" + 
-                              date.substring(8,10) + ":" + date.substring(10,12) + ":" + date.substring(12,14) + "Z" );
+        if ( date.length() == "yyyymmddhhmmss".length() )
+          {
+            doc.addField( "date", date.substring(0,4)  + "-" + date.substring(4,6)   + "-" + date.substring(6,8)   + "T" + 
+                                  date.substring(8,10) + ":" + date.substring(10,12) + ":" + date.substring(12,14) + "Z" );
+          }
       }
 
     // Special handling for site (domain) and tld
