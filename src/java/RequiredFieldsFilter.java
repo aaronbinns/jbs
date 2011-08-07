@@ -21,16 +21,22 @@ import org.archive.hadoop.Document;
 
 /**
  * Simple DocumentFilter that ensures certain document properties have
- * non-empty values.  For example, a URL.
+ * non-empty values.  For example, a URL and non-empty title and
+ * content fields.
  */
 public class RequiredFieldsFilter implements DocumentFilter
 {
 
   public boolean isAllowed( Document document )
   {
-    String url = document.get( "url" );
+    if ( document.get("url"    ).length() == 0 ||
+         document.get("title"  ).length() == 0 &&
+         document.get("content").length() == 0 )
+      {
+        return false;
+      }
     
-    return url.length() > 0;
+    return true;
   }
 
 }
