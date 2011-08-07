@@ -16,16 +16,15 @@
 
 package org.archive.jbs;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.mapred.lib.IdentityMapper;
+import org.apache.hadoop.mapred.lib.*;
 import org.apache.hadoop.util.*;
-import org.apache.hadoop.mapred.lib.MultipleInputs;
 
 import org.apache.nutch.parse.ParseData;
 import org.apache.nutch.parse.ParseText;
@@ -181,10 +180,15 @@ public class Main extends Configured implements Tool
     conf.setReducerClass(Reduce.class);
     
     // Choose the outputformat to either merge or index the records
-    //   LuceneOutputFormat  - writes to Lucene index.
-    //   SolrOutputFormat    - sends documents to external Solr server
-    //   MapFileOutputFormat - merges documents into Hadoop MapFile
-    //                         org.apache.hadoop.mapred.MapFileOutputFormat
+    //
+    // org.archive.jbs.lucene.LuceneOutputFormat
+    //    - builds local Lucene index
+    //
+    // org.archive.jbs.solr.SolrOutputFormat
+    //    - sends documents to remote Solr server
+    //
+    // org.apache.hadoop.mapred.MapFileOutputFormat
+    //    - writes merged documents to Hadoop MapFile
     conf.setOutputFormat( (Class) Class.forName( conf.get( "jbs.outputformat.class", "org.apache.hadoop.mapred.MapFileOutputFormat" ) ) );
 
     // Add the input paths as either NutchWAX segment directories or
@@ -220,7 +224,6 @@ public class Main extends Configured implements Tool
       }
 
     FileOutputFormat.setOutputPath(conf, new Path(args[0]));
-    // FileOutputFormat.setCompressOutput( conf, true );
     
     JobClient.runJob(conf);
     
