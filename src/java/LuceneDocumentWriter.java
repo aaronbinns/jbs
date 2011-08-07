@@ -22,16 +22,16 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 
-import org.archive.hadoop.DocumentProperties;
+import org.archive.hadoop.Document;
 
 /**
- * The LuceneDocumentWriter converts DocumentProperties into a Lucene
+ * The LuceneDocumentWriter converts Document into a Lucene
  * Document then adds that document to the given index.
  *
  * Most of the interesting work is done by the DocumentFilters
  * and FieldHandlers.  The filters determine whether or not
  * the document is allowed and the various handlers convert
- * the DocumentProperties into Lucene Fields.
+ * the Document into Lucene Fields.
  */
 public class LuceneDocumentWriter extends DocumentWriterBase
 {
@@ -57,22 +57,22 @@ public class LuceneDocumentWriter extends DocumentWriterBase
     this.handlers = handlers;
   }
 
-  public void add( String key, DocumentProperties properties )
+  public void add( String key, Document document )
     throws IOException
   {
     for ( DocumentFilter filter : filters.values() )
       {
-        if ( ! filter.isAllowed( properties ) )
+        if ( ! filter.isAllowed( document ) )
           {
             return ;
           }
       }
 
-    Document doc = new Document();
+    org.apache.lucene.document.Document doc = new org.apache.lucene.document.Document();
 
     for ( FieldHandler handler : handlers.values() )
       {
-        handler.handle( doc, properties );
+        handler.handle( doc, document );
       }
 
     indexer.addDocument( doc, analyzer );

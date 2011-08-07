@@ -17,7 +17,7 @@
 import java.io.*;
 import java.util.*;
 
-import org.archive.hadoop.DocumentProperties;
+import org.archive.hadoop.Document;
 
 /**
  * Simple DocumentFilter which only allows documents with specific
@@ -71,9 +71,9 @@ public class TypeFilter implements DocumentFilter
     return this.allowed;
   }
   
-  public boolean isAllowed( DocumentProperties properties )
+  public boolean isAllowed( Document document )
   {
-    String type = properties.get( "type" );
+    String type = document.get( "type" );
 
     // If no explicit list of allowed types, allow them all.
     if ( this.allowed == null || this.allowed.size( ) == 0 )
@@ -82,7 +82,7 @@ public class TypeFilter implements DocumentFilter
       }
 
     // De-alias it.
-    type = this.normalizer.normalize( properties );
+    type = this.normalizer.normalize( document );
 
     return allowed.contains( type );
   }

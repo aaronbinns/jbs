@@ -21,7 +21,7 @@ import java.util.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 
-import org.archive.hadoop.DocumentProperties;
+import org.archive.hadoop.Document;
 
 /**
  * Custom FieldHandler implementation for type.
@@ -38,9 +38,9 @@ public class TypeHandler implements FieldHandler
     this.normalizer = normalizer;
   }
 
-  public void handle( Document doc, DocumentProperties properties )
+  public void handle( org.apache.lucene.document.Document doc, Document document )
   {
-    String type = this.normalizer.normalize( properties );
+    String type = this.normalizer.normalize( document );
 
     // We store and index the normalized type.
     //

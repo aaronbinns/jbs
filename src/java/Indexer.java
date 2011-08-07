@@ -30,7 +30,7 @@ import org.apache.nutch.parse.ParseText;
 import org.apache.nutch.parse.Outlink;
 import org.apache.nutch.metadata.Metadata;
 
-import org.archive.hadoop.Document;
+import org.archive.hadoop.DocumentWritable;
 
 
 /** 
@@ -42,9 +42,9 @@ public class Indexer extends Configured implements Tool
   /**
    * Mapper that handles text files of various formats, primarily CDX and "revisit" files.
    */
-  public static class TextMapper extends MapReduceBase implements Mapper<LongWritable,Text,Text,Document>
+  public static class TextMapper extends MapReduceBase implements Mapper<LongWritable,Text,Text,DocumentWritable>
   {
-    public void map( LongWritable key, Text value, OutputCollector<Text,Document> output, Reporter reporter )
+    public void map( LongWritable key, Text value, OutputCollector<Text,DocumentWritable> output, Reporter reporter )
       throws IOException
     {
       try
@@ -73,7 +73,7 @@ public class Indexer extends Configured implements Tool
               return ;
             }
           
-          Document doc = new Document( );
+          DocumentWritable doc = new DocumentWritable( );
           doc.add( "date", newValue.toString( ) );
 
           output.collect( newKey, doc );
@@ -88,12 +88,12 @@ public class Indexer extends Configured implements Tool
   /**
    * Mapper that can handle Writables from Nutch(WAX) segments.
    */
-  public static class NutchMapper extends MapReduceBase implements Mapper<Text, Writable, Text, Document>
+  public static class NutchMapper extends MapReduceBase implements Mapper<Text, Writable, Text, DocumentWritable>
   {
-    public void map( Text key, Writable value, OutputCollector<Text, Document> output, Reporter reporter)
+    public void map( Text key, Writable value, OutputCollector<Text, DocumentWritable> output, Reporter reporter)
       throws IOException
     {
-      Document doc = new Document( );
+      DocumentWritable doc = new DocumentWritable( );
 
       if ( value instanceof ParseData )
         {
@@ -127,12 +127,12 @@ public class Indexer extends Configured implements Tool
     }
   }
   
-  public static class Reduce extends MapReduceBase implements Reducer<Text, Document, Text, Document> 
+  public static class Reduce extends MapReduceBase implements Reducer<Text, DocumentWritable, Text, DocumentWritable> 
   {
-    public void reduce( Text key, Iterator<Document> values, OutputCollector<Text, Document> output, Reporter reporter)
+    public void reduce( Text key, Iterator<DocumentWritable> values, OutputCollector<Text, DocumentWritable> output, Reporter reporter)
       throws IOException
     {
-      Document doc = new Document( );
+      DocumentWritable doc = new DocumentWritable( );
 
       while ( values.hasNext( ) )
         {
@@ -162,7 +162,7 @@ public class Indexer extends Configured implements Tool
     conf.setJobName("Indexer");
     
     conf.setOutputKeyClass(Text.class);
-    conf.setOutputValueClass(Document.class);
+    conf.setOutputValueClass(DocumentWritable.class);
     
     conf.setCombinerClass(Reduce.class);
     conf.setReducerClass(Reduce.class);

@@ -21,7 +21,7 @@ import java.util.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 
-import org.archive.hadoop.DocumentProperties;
+import org.archive.hadoop.Document;
 
 /**
  * Custom FieldHandler implementation for site.
@@ -45,11 +45,11 @@ public class SiteHandler implements FieldHandler
     this.helper = helper;
   }
 
-  public void handle( Document doc, DocumentProperties properties )
+  public void handle( org.apache.lucene.document.Document doc, Document document )
   {
     try
       {
-        URL u = new URL( properties.get( "url" ) );
+        URL u = new URL( document.get( "url" ) );
 
         String domain = this.helper.getDomain( u );
 

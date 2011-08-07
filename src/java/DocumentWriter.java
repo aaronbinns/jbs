@@ -22,10 +22,10 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
 
-import org.archive.hadoop.DocumentProperties;
+import org.archive.hadoop.Document;
 
 /**
- * Implementors take the given DocumentProperties, create a
+ * Implementors take the given Document, create a
  * target-specific document from it and write it to that target.
  */
 public interface DocumentWriter
@@ -34,6 +34,6 @@ public interface DocumentWriter
 
   public DocumentFilter getFilter( String name );
 
-  public void add( String key, DocumentProperties properties ) throws IOException;
+  public void add( String key, Document document ) throws IOException;
 
 }

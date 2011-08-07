@@ -17,11 +17,11 @@
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 
-import org.archive.hadoop.DocumentProperties;
+import org.archive.hadoop.Document;
 
 /**
  * Straightforward implementation of a FieldHandler that gets the
- * field value from the DocumentProperties via the specified key, then
+ * field value from the Document via the specified key, then
  * adds it to the Document using the given name, store and index
  * values.
  *
@@ -47,16 +47,16 @@ public class SimpleFieldHandler implements FieldHandler
     this.index = index;
   }
 
-  public void handle( Document doc, DocumentProperties properties )
+  public void handle( org.apache.lucene.document.Document luceneDocument, Document document )
   {
-    String value = properties.get( key ).trim( );
+    String value = document.get( key ).trim( );
     
     if ( value.length( ) < 1 )
       {
         return ;
       }
 
-    doc.add( new Field( name, value, store, index ) );
+    luceneDocument.add( new Field( name, value, store, index ) );
   }
 
 }

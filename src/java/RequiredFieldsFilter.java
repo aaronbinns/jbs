@@ -17,7 +17,7 @@
 import java.io.*;
 import java.net.*;
 
-import org.archive.hadoop.DocumentProperties;
+import org.archive.hadoop.Document;
 
 /**
  * Simple DocumentFilter that ensures certain document properties have
@@ -26,9 +26,9 @@ import org.archive.hadoop.DocumentProperties;
 public class RequiredFieldsFilter implements DocumentFilter
 {
 
-  public boolean isAllowed( DocumentProperties properties )
+  public boolean isAllowed( Document document )
   {
-    String url = properties.get( "url" );
+    String url = document.get( "url" );
     
     return url.length() > 0;
   }

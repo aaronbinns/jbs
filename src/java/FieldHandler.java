@@ -15,15 +15,15 @@
  */
 
 import org.apache.lucene.document.*;
-import org.archive.hadoop.DocumentProperties;
+import org.archive.hadoop.Document;
 
 /**
  * Simple interface for family of implementations which "handle" a
  * field by taking information related to that field from the
- * DocumentProperties, creating a Lucene Field object and adding it to
+ * Document, creating a Lucene Field object and adding it to
  * the Document.
  */
 public interface FieldHandler
 {
-  public void handle( Document doc, DocumentProperties properties );
+  public void handle( org.apache.lucene.document.Document luceneDocument, Document document );
 }

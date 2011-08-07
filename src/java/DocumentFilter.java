@@ -14,16 +14,16 @@
  * permissions and limitations under the License.
  */
 
-import org.archive.hadoop.DocumentProperties;
+import org.archive.hadoop.Document;
 
 /**
  * Interface for family of implementors which filter out documents
  * based on arbitrary rules.
  *
- * The DocumentProperties are given to the filter, which returns true
+ * The Document are given to the filter, which returns true
  * if the document is allowed and false if not.
  */
 public interface DocumentFilter
 {
-  public boolean isAllowed( DocumentProperties properties );
+  public boolean isAllowed( Document document );
 }

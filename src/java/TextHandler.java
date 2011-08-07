@@ -21,7 +21,7 @@ import java.util.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 
-import org.archive.hadoop.DocumentProperties;
+import org.archive.hadoop.Document;
 
 /**
  * Custom FieldHandler implementation for "text".
@@ -79,10 +79,10 @@ public class TextHandler implements FieldHandler
     this.maxLength = maxLength;
   }
   
-  public void handle( Document doc, DocumentProperties properties )
+  public void handle( org.apache.lucene.document.Document doc, Document document )
   {
     // Special handling for content field.
-    String text = properties.get( this.key ).trim( );
+    String text = document.get( this.key );
 
     if ( text.length() < 1 )
       {

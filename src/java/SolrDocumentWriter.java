@@ -23,7 +23,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 
-import org.archive.hadoop.DocumentProperties;
+import org.archive.hadoop.Document;
 
 /**
  * 
@@ -52,12 +52,12 @@ public class SolrDocumentWriter extends DocumentWriterBase
     this.typeNormalizer = typeNormalizer;
   }
 
-  public void add( String key, DocumentProperties properties )
+  public void add( String key, Document document )
     throws IOException
   {
     for ( DocumentFilter filter : filters.values() )
       {
-        if ( ! filter.isAllowed( properties ) )
+        if ( ! filter.isAllowed( document ) )
           {
             return ;
           }
@@ -72,16 +72,16 @@ public class SolrDocumentWriter extends DocumentWriterBase
     
     for ( String p : new String[] { "url", "digest", "title", "length", "collection", "boiled" } )
       {
-        String value = properties.get( p );
+        String value = document.get( p );
 
-        if ( value.length() > 0 ) doc.addField( p, properties.get( p ) );
+        if ( value.length() > 0 ) doc.addField( p, document.get( p ) );
       }
 
-    doc.addField( "content", properties.get( "content_parsed" ) );
+    doc.addField( "content", document.get( "content_parsed" ) );
 
     // Solr requires the date to be in the form: 1995-12-31T23:59:59Z
     // See the Solr schema docs.
-    HashSet<String> dates = new HashSet<String>( Arrays.asList( properties.get("date").split( "\\s+" ) ) );
+    HashSet<String> dates = new HashSet<String>( Arrays.asList( document.get("date").split( "\\s+" ) ) );
     for ( String date : dates )
       {
         if ( date.length() == "yyyymmddhhmmss".length() )
@@ -94,7 +94,7 @@ public class SolrDocumentWriter extends DocumentWriterBase
     // Special handling for site (domain) and tld
     try
       {
-        URL u = new URL( properties.get( "url" ) );
+        URL u = new URL( document.get( "url" ) );
 
         String domain = this.helper.getDomain( u );
         String tld    = null;
@@ -122,7 +122,7 @@ public class SolrDocumentWriter extends DocumentWriterBase
       }
 
     // Special handling for type
-    String type = this.typeNormalizer.normalize( properties );
+    String type = this.typeNormalizer.normalize( document );
     
     doc.addField( "type", type );
 

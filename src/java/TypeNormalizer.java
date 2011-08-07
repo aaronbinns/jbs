@@ -17,7 +17,7 @@
 import java.io.*;
 import java.util.*;
 
-import org.archive.hadoop.DocumentProperties;
+import org.archive.hadoop.Document;
 
 public class TypeNormalizer
 {
@@ -90,9 +90,9 @@ public class TypeNormalizer
     return this.aliases;
   }
   
-  public String normalize( DocumentProperties properties )
+  public String normalize( Document document )
   {
-    String type = properties.get( "type" );
+    String type = document.get( "type" );
 
     // Chop off anything after a ';' character.  This is
     // for stuff like: "text/html; charset=utf-8"

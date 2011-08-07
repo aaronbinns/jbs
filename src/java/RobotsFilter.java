@@ -17,7 +17,7 @@
 import java.io.*;
 import java.net.*;
 
-import org.archive.hadoop.DocumentProperties;
+import org.archive.hadoop.Document;
 
 /**
  * Simple DocumentFilter that filters out robots and favicon URLs.
@@ -25,9 +25,9 @@ import org.archive.hadoop.DocumentProperties;
 public class RobotsFilter implements DocumentFilter
 {
 
-  public boolean isAllowed( DocumentProperties properties )
+  public boolean isAllowed( Document document )
   {
-    String url  = properties.get( "url" );
+    String url  = document.get( "url" );
     
     try
       {
