@@ -14,6 +14,8 @@
  * permissions and limitations under the License.
  */
 
+package org.archive.hadoop;
+
 /**
  * Simple interface for any number of implementors to provide Map-like
  * functionality returning a value for a key.

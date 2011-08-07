@@ -30,6 +30,8 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
 
+import org.archive.hadoop.Document;
+
 /**
  * This class is inspired by Nutch's LuceneOutputFormat class.  It does
  * primarily three things of interest:
@@ -42,7 +44,7 @@ import org.apache.lucene.store.*;
  *
  *  2. Closes that index and copies it into HDFS.
  */
-public class LuceneOutputFormat extends FileOutputFormat<Text, MapWritable>
+public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
 {
   public FileSystem fs;
 
@@ -51,7 +53,7 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, MapWritable>
   
   public IndexWriter indexer;
 
-  public RecordWriter<Text, MapWritable> getRecordWriter( final FileSystem fs,
+  public RecordWriter<Text, Document> getRecordWriter( final FileSystem fs,
                                                           final JobConf job,
                                                           final String name,
                                                           final Progressable progress )
@@ -81,9 +83,9 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, MapWritable>
     return new LuceneRecordWriter( docWriter );
   }
 
-  public class LuceneRecordWriter implements RecordWriter<Text, MapWritable>
+  public class LuceneRecordWriter implements RecordWriter<Text, Document>
   {
-    DocumentWriter docWriter;
+    LuceneDocumentWriter docWriter;
 
     public LuceneRecordWriter( LuceneDocumentWriter docWriter )
       throws IOException
@@ -94,10 +96,10 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, MapWritable>
     /**
      * Delegate to docWriter.
      */
-    public void write( Text key, MapWritable properties )
+    public void write( Text key, Document document )
       throws IOException
     {
-      this.docWriter.add( key, properties );
+      this.docWriter.add( key.toString(), document );
     }
 
     public void close( Reporter reporter )

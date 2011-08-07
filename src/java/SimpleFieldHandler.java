@@ -17,6 +17,8 @@
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 
+import org.archive.hadoop.DocumentProperties;
+
 /**
  * Straightforward implementation of a FieldHandler that gets the
  * field value from the DocumentProperties via the specified key, then

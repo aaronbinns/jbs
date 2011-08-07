@@ -17,6 +17,7 @@
 import java.io.*;
 import java.util.*;
 
+import org.archive.hadoop.DocumentProperties;
 
 public class TypeNormalizer
 {

@@ -23,6 +23,7 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
 
+import org.archive.hadoop.DocumentProperties;
 
 /**
  * Sub-classes take the given MapWritable, create a document from it
@@ -43,10 +44,12 @@ public abstract class DocumentWriterBase implements DocumentWriter
     this.filters.put( name, filter );
   }
 
-  public void add( Text key, MapWritable properties ) throws IOException
+  /*
+  public void add( Text key, DocumentProperties properties ) throws IOException
   {
-    this.add( key.toString(), new MapWritableAdapter( properties ) );
+    this.add( key.toString(), properties );
   }
+  */
   
   public abstract void add( String key, DocumentProperties properties ) throws IOException;
 }

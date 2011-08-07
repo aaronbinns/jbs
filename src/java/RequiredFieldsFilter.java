@@ -17,6 +17,8 @@
 import java.io.*;
 import java.net.*;
 
+import org.archive.hadoop.DocumentProperties;
+
 /**
  * Simple DocumentFilter that ensures certain document properties have
  * non-empty values.  For example, a URL.

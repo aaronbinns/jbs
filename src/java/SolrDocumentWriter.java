@@ -23,6 +23,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 
+import org.archive.hadoop.DocumentProperties;
+
 /**
  * 
  */

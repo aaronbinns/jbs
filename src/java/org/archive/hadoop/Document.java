@@ -14,7 +14,7 @@ import org.apache.hadoop.io.*;
  * values are retained.  Setting a property to 'null' or a collection
  * containing a single 'null' element sets the property to 'null.
  */
-public class Document implements Writable
+public class Document implements Writable, DocumentProperties
 {
   public Map<String,Object> properties;
   public ArrayList<Link>    links;
@@ -30,10 +30,23 @@ public class Document implements Writable
   }
 
   /**
+   * Get the String value of the property key *and* return "" rather
+   * than 'null' if no property value is defined.
+   */
+  public String get( String key )
+  {
+    String value = getValue( key );
+    
+    if ( value == null ) return "";
+
+    return value;
+  }
+
+  /**
    * Get the String value for the property key.  If the property has
    * multiple values, get one of them.
    */
-  public String get( String key )
+  public String getValue( String key )
   {
     Object value = properties.get( key );
 
@@ -81,6 +94,8 @@ public class Document implements Writable
    */
   public void set( String key, String value )
   {
+    if ( value != null ) value = value.trim();
+
     properties.put( key, value );
   }
 
@@ -89,12 +104,29 @@ public class Document implements Writable
    * collection, or only contains one element which is null, then it's
    * the same as set(key,null).
    */
-  public void set( String key, Collection<String> newValues )
+  public void set( String key, Collection<String> c )
   {
-    if ( newValues == null || newValues.size( ) == 0 )
+    if ( c == null || c.size() == 0 )
       {
         properties.put( key, null );
         return ;
+      }
+
+    Set<String> newValues = new HashSet<String>( c.size( ) );
+    for ( String newValue : c )
+      {
+        if ( newValue != null )
+          {
+            newValues.add( newValue.trim( ) );
+          }
+      }
+
+    // If c contained only 'null' elements, then at this point it
+    // would be empty.  In that case we just set a 'null' value for
+    // the property.
+    if ( newValues.size( ) == 0 )
+      {
+        properties.put( key, null );
       }
 
     if ( newValues.size( ) == 1 )
@@ -104,30 +136,7 @@ public class Document implements Writable
         return;
       }
 
-    Set<String> values;
-
-    Object value = properties.get( key );
-    if ( value != null && value instanceof Set )
-      {
-        values = (Set<String>) value;
-        values.clear();
-      }
-    else
-      {
-        values = new HashSet<String>( newValues.size() );
-      }
-
-    values.addAll( newValues );
-
-    // If the resulting set of values contains only 1 value then set
-    // the property value to it, rather than a Set with 1 element.
-    if ( values.size( ) == 1 )
-      {
-        properties.put( key, values.iterator( ).next( ) );
-        return ;
-      }
-
-    properties.put( key, values );
+    properties.put( key, newValues );
   }
 
   /**
@@ -135,13 +144,20 @@ public class Document implements Writable
    */
   public void add( String key, String newValue )
   {
-    if ( newValue == null ) return;
+    if ( newValue == null ) 
+      {
+        return;
+      }
+    else
+      {
+        newValue = newValue.trim();
+      }
 
     Object value = properties.get( key );
 
     if ( value == null )
       {
-        properties.put( key, value );
+        properties.put( key, newValue );
         
         return ;
       }
@@ -151,7 +167,7 @@ public class Document implements Writable
     if ( value instanceof String )
       {
         // If we're adding the same value, ignore it.
-        if ( ((String) value) == newValue )
+        if ( ((String) value).equals( newValue ) )
           {
             return ;
           }
@@ -181,8 +197,15 @@ public class Document implements Writable
         return;
       }
 
-    Set<String> newValues  = new HashSet<String>( c );
-    newValues.remove( null );
+    Set<String> newValues = new HashSet<String>( c.size( ) );
+    for ( String newValue : c )
+      {
+        if ( newValue != null )
+          {
+            newValue = newValue.trim();
+            newValues.add( newValue );
+          }
+      }
 
     // If after uniquing the new values and removing any 'null', the
     // set is empty, then there's nothing to add.
@@ -229,6 +252,11 @@ public class Document implements Writable
    */
   public void addLink( String url, String text )
   {
+    if ( text != null )
+      {
+        text = text.trim();
+      }
+
     this.links.add( new Link( url, text ) );
   }
   
@@ -253,7 +281,17 @@ public class Document implements Writable
    */
   public void merge( Document other )
   {
-    
+    for ( String key : other.properties.keySet( ) )
+      {
+        this.add( key, other.getAll( key ) );
+      }
+
+    // FIXME: Is there something smarter to do here?  We take whoever
+    // has non-zero list of links.
+    if ( links.size() == 0 && other.links.size( ) > 0 )
+      {
+        links.addAll( other.links );
+      }
   }
 
   /**
@@ -262,16 +300,15 @@ public class Document implements Writable
   public void write( DataOutput out )
     throws IOException
   {
-    /* TODO: Is this worth it?
     // First, remove all properties with a null value.
-    for ( Map.Entry<String,Object> e : properties.entrySet( ) )
+    for ( Iterator<Map.Entry<String,Object>> i = properties.entrySet( ).iterator( ) ; i.hasNext( ) ; )
       {
+        Map.Entry e = i.next( );
         if ( e.getKey( ) == null || e.getValue( ) == null )
           {
-            properties.remove( e.getKey( ) );
+            i.remove( );
           }
       }
-    */
 
     // First write out how many properties there are.  We'll need this
     // for when we read them back in.
@@ -284,12 +321,7 @@ public class Document implements Writable
         
         Text.writeString( out, e.getKey() );
 
-        if ( value instanceof String )
-          {
-            out.writeInt( 1 );
-            Text.writeString( out, (String) value );
-          }
-        else
+        if ( value instanceof Set )
           {
             Set<String> values = (Set<String>) value;
             out.writeInt( values.size( ) );
@@ -297,6 +329,11 @@ public class Document implements Writable
               {
                 Text.writeString( out, s );
               }
+          }
+        else
+          {
+            out.writeInt( 1 );
+            Text.writeString( out, (String) value );
           }
       }
 

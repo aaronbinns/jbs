@@ -22,10 +22,11 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
 
+import org.archive.hadoop.DocumentProperties;
 
 /**
- * Implementors take the given MapWritable, create a document from it
- * and write it to an index.
+ * Implementors take the given DocumentProperties, create a
+ * target-specific document from it and write it to that target.
  */
 public interface DocumentWriter
 {
@@ -33,6 +34,6 @@ public interface DocumentWriter
 
   public DocumentFilter getFilter( String name );
 
-  public void add( Text key, MapWritable properties ) throws IOException;
+  public void add( String key, DocumentProperties properties ) throws IOException;
 
 }

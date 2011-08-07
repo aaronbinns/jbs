@@ -14,6 +14,8 @@
  * permissions and limitations under the License.
  */
 
+import org.archive.hadoop.DocumentProperties;
+
 /**
  * Interface for family of implementors which filter out documents
  * based on arbitrary rules.

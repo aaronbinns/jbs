@@ -21,6 +21,8 @@ import java.util.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 
+import org.archive.hadoop.DocumentProperties;
+
 /**
  * Custom FieldHandler implementation for "text".
  *

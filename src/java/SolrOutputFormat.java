@@ -24,6 +24,8 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
 
+import org.archive.hadoop.Document;
+
 /**
  * This class is inspired by the technique used in Nutch's
  * LuceneOutputFormat class.  However, rather than creating a Lucene
@@ -33,9 +35,9 @@ import org.apache.hadoop.util.*;
  * We perform essentially the same type normalization and filtering,
  * robot filtering, etc. before forming the Solr document.
  */
-public class SolrOutputFormat extends FileOutputFormat<Text, MapWritable>
+public class SolrOutputFormat extends FileOutputFormat<Text, Document>
 {
-  public RecordWriter<Text, MapWritable> getRecordWriter( final FileSystem fs,
+  public RecordWriter<Text, Document> getRecordWriter( final FileSystem fs,
                                                           final JobConf job,
                                                           final String name,
                                                           final Progressable progress )
@@ -81,7 +83,7 @@ public class SolrOutputFormat extends FileOutputFormat<Text, MapWritable>
     return new SolrRecordWriter( solrDocWriter );
   }
   
-  public class SolrRecordWriter implements RecordWriter<Text, MapWritable>
+  public class SolrRecordWriter implements RecordWriter<Text, Document>
   {
     SolrDocumentWriter docWriter;
     
@@ -90,10 +92,10 @@ public class SolrOutputFormat extends FileOutputFormat<Text, MapWritable>
       this.docWriter = docWriter;
     }
 
-    public void write( Text key, MapWritable properties )
+    public void write( Text key, Document document )
       throws IOException
     {
-      this.docWriter.add( key, properties );
+      this.docWriter.add( key.toString(), document );
     }
     
     public void close( Reporter reporter )

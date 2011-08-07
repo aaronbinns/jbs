@@ -15,6 +15,7 @@
  */
 
 import org.apache.lucene.document.*;
+import org.archive.hadoop.DocumentProperties;
 
 /**
  * Simple interface for family of implementations which "handle" a

@@ -17,6 +17,8 @@
 import java.io.*;
 import java.util.*;
 
+import org.archive.hadoop.DocumentProperties;
+
 /**
  * Simple DocumentFilter which only allows documents with specific
  * types.  Types are normalized before they are checked.  A default
