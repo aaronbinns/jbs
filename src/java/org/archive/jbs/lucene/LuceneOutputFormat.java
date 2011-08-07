@@ -76,10 +76,10 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
                                new KeywordAnalyzer( ),
                                IndexWriter.MaxFieldLength.UNLIMITED );
     
-    indexer.setMergeFactor      ( job.getInt("indexer.mergeFactor", 10) );
-    indexer.setMaxMergeDocs     ( job.getInt("indexer.maxMergeDocs", Integer.MAX_VALUE) );
-    indexer.setTermIndexInterval( job.getInt("indexer.termIndexInterval", 128) );
-    indexer.setMaxFieldLength   ( job.getInt("indexer.max.tokens", Integer.MAX_VALUE) );
+    indexer.setMergeFactor      ( job.getInt("jbs.lucene.mergeFactor", 10) );
+    indexer.setMaxMergeDocs     ( job.getInt("jbs.lucene.maxMergeDocs", Integer.MAX_VALUE) );
+    indexer.setTermIndexInterval( job.getInt("jbs.lucene.termIndexInterval", 128) );
+    indexer.setMaxFieldLength   ( job.getInt("jbs.lucene.max.tokens", Integer.MAX_VALUE) );
     indexer.setUseCompoundFile  ( false );
     indexer.setSimilarity       ( new WebSimilarity( ) );
 
@@ -128,8 +128,8 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
   protected LuceneDocumentWriter buildDocumentWriter( JobConf job, IndexWriter indexer )
     throws IOException
   {
-    CustomAnalyzer analyzer = new CustomAnalyzer( job.getBoolean( "indexer.analyzer.custom.omitNonAlpha", true ),
-                                                  new HashSet<String>( Arrays.asList( job.get( "indexer.analyzer.stopWords", "" ).trim().split( "\\s+" ) ) ) );
+    CustomAnalyzer analyzer = new CustomAnalyzer( job.getBoolean( "jbs.lucene.analyzer.custom.omitNonAlpha", true ),
+                                                  new HashSet<String>( Arrays.asList( job.get( "jbs.lucene.analyzer.stopWords", "" ).trim().split( "\\s+" ) ) ) );
     
     LuceneDocumentWriter writer = new LuceneDocumentWriter( indexer, analyzer );
 
@@ -141,7 +141,7 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
     writer.setFilter( "type",      typeFilter );
     writer.setFilter( "robots",    new RobotsFilter( ) );
 
-    int textMaxLength = job.getInt( "indexer.text.maxlength", TextHandler.MAX_LENGTH );
+    int textMaxLength = job.getInt( "jbs.lucene.text.maxlength", TextHandler.MAX_LENGTH );
 
     Map<String,FieldHandler> handlers = new HashMap<String,FieldHandler>( );
     handlers.put( "url"       , new SimpleFieldHandler( "url",        Field.Store.YES, Field.Index.NO ) );
@@ -166,9 +166,9 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
   {
     TypeNormalizer normalizer = new TypeNormalizer( );
 
-    Map<String,String> aliases = normalizer.parseAliases( job.get( "indexer.typeNormalizer.aliases", "" ) );
+    Map<String,String> aliases = normalizer.parseAliases( job.get( "jbs.typeNormalizer.aliases", "" ) );
 
-    if ( job.getBoolean( "indexer.typeNormalizer.useDefaults", true ) )
+    if ( job.getBoolean( "jbs.typeNormalizer.useDefaults", true ) )
       {
         Map<String,String> defaults = normalizer.getDefaultAliases( );
         defaults.putAll( aliases );
@@ -187,9 +187,9 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
   {
     TypeFilter typeFilter = new TypeFilter( );
 
-    Set<String> allowedTypes = typeFilter.parse( job.get( "indexer.typeFilter.allowed", "" ) );
+    Set<String> allowedTypes = typeFilter.parse( job.get( "jbs.typeFilter.allowed", "" ) );
     
-    if ( job.getBoolean( "indexer.typeFilter.useDefaults", true ) )
+    if ( job.getBoolean( "jbs.typeFilter.useDefaults", true ) )
       {
         Set<String> defaults = typeFilter.getDefaultAllowed( );
         defaults.addAll( allowedTypes );
@@ -210,7 +210,7 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
   {
     IDNHelper helper = new IDNHelper( );
 
-    if ( job.getBoolean( "indexer.idnHelper.useDefaults", true ) )
+    if ( job.getBoolean( "jbs.idnHelper.useDefaults", true ) )
       {
         InputStream is = SiteHandler.class.getClassLoader( ).getResourceAsStream( "effective_tld_names.dat" );
         
@@ -224,7 +224,7 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
         helper.addRules( reader );
       }
 
-    String moreRules = job.get( "indexer.idnHelper.moreRules", "" );
+    String moreRules = job.get( "jbs.idnHelper.moreRules", "" );
     
     if ( moreRules.length() > 0 )
       {

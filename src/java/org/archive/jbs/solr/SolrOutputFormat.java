@@ -48,15 +48,15 @@ public class SolrOutputFormat extends FileOutputFormat<Text, Document>
                                                           final Progressable progress )
     throws IOException
   {
-    String serverUrl  = job.get( "indexer.solr.url", "http://localhost:8983/solr" );
-    int    docBufSize = job.getInt( "indexer.solr.bufSize", 10 );
+    String serverUrl  = job.get( "jbs.solr.url", "http://localhost:8983/solr" );
+    int    docBufSize = job.getInt( "jbs.solr.bufSize", 10 );
 
     SolrDocumentWriter solrDocWriter = new SolrDocumentWriter( new URL( serverUrl ), docBufSize );
 
     TypeNormalizer normalizer = new TypeNormalizer( );
-    Map<String,String> aliases = normalizer.parseAliases( job.get( "indexer.typeNormalizer.aliases", "" ) );
+    Map<String,String> aliases = normalizer.parseAliases( job.get( "jbs.typeNormalizer.aliases", "" ) );
 
-    if ( job.getBoolean( "indexer.typeNormalizer.useDefaults", true ) )
+    if ( job.getBoolean( "jbs.typeNormalizer.useDefaults", true ) )
       {
         Map<String,String> defaults = normalizer.getDefaultAliases( );
         defaults.putAll( aliases );
@@ -66,9 +66,9 @@ public class SolrOutputFormat extends FileOutputFormat<Text, Document>
     normalizer.setAliases( aliases );
 
     TypeFilter typeFilter = new TypeFilter( );
-    Set<String> allowedTypes = typeFilter.parse( job.get( "indexer.typeFilter.allowed", "" ) );
+    Set<String> allowedTypes = typeFilter.parse( job.get( "jbs.typeFilter.allowed", "" ) );
 
-    if ( job.getBoolean( "indexer.typeFilter.useDefaults", true ) )
+    if ( job.getBoolean( "jbs.typeFilter.useDefaults", true ) )
       {
         Set<String> defaults = typeFilter.getDefaultAllowed( );
         defaults.addAll( allowedTypes );
@@ -125,7 +125,7 @@ public class SolrOutputFormat extends FileOutputFormat<Text, Document>
   {
     IDNHelper helper = new IDNHelper( );
 
-    if ( job.getBoolean( "indexer.idnHelper.useDefaults", true ) )
+    if ( job.getBoolean( "jbs.idnHelper.useDefaults", true ) )
       {
         InputStream is = this.getClass().getClassLoader( ).getResourceAsStream( "effective_tld_names.dat" );
         
@@ -139,7 +139,7 @@ public class SolrOutputFormat extends FileOutputFormat<Text, Document>
         helper.addRules( reader );
       }
 
-    String moreRules = job.get( "indexer.idnHelper.moreRules", "" );
+    String moreRules = job.get( "jbs.idnHelper.moreRules", "" );
     
     if ( moreRules.length() > 0 )
       {
