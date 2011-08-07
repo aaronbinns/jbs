@@ -25,13 +25,13 @@ import org.apache.lucene.index.*;
 import org.archive.hadoop.Document;
 
 /**
- * The LuceneDocumentWriter converts Document into a Lucene
- * Document then adds that document to the given index.
+ * The LuceneDocumentWriter converts a Document into a Lucene Document
+ * then adds it to the given index.
  *
- * Most of the interesting work is done by the DocumentFilters
- * and FieldHandlers.  The filters determine whether or not
- * the document is allowed and the various handlers convert
- * the Document into Lucene Fields.
+ * Most of the interesting work is done by the DocumentFilters and
+ * FieldHandlers.  The filters determine whether or not the document
+ * is allowed and the various handlers convert the Document properties
+ * into Lucene Fields.
  */
 public class LuceneDocumentWriter extends DocumentWriterBase
 {
