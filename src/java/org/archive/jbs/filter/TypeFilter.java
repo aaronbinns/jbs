@@ -14,10 +14,12 @@
  * permissions and limitations under the License.
  */
 
-package org.archive.jbs;
+package org.archive.jbs.filter;
 
 import java.io.*;
 import java.util.*;
+
+import org.archive.jbs.Document;
 
 /**
  * Simple DocumentFilter which only allows documents with specific

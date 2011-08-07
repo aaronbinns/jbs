@@ -28,6 +28,7 @@ import org.apache.hadoop.util.*;
 
 import org.archive.jbs.Document;
 import org.archive.jbs.util.*;
+import org.archive.jbs.filter.*;
 import org.archive.jbs.*;
 
 /**

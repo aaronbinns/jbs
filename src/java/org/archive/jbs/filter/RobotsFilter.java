@@ -14,28 +14,37 @@
  * permissions and limitations under the License.
  */
 
-package org.archive.jbs;
+package org.archive.jbs.filter;
 
 import java.io.*;
+import java.net.*;
 
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.util.*;
-
-import org.archive.jbs.filter.*;
+import org.archive.jbs.Document;
 
 /**
- * Implementors take the given Document, create a
- * target-specific document from it and write it to that target.
+ * Simple DocumentFilter that filters out robots and favicon URLs.
  */
-public interface DocumentWriter
+public class RobotsFilter implements DocumentFilter
 {
-  public void setFilter( String name, DocumentFilter filter );
 
-  public DocumentFilter getFilter( String name );
+  public boolean isAllowed( Document document )
+  {
+    String url  = document.get( "url" );
+    
+    try
+      {
+        URI uri = new URI( url );
+        
+        String path = uri.getPath().trim( );
 
-  public void add( String key, Document document ) throws IOException;
+        if ( "/favicon.ico".equals( path ) ||
+             "/robots.txt" .equals( path ) )
+          {
+            return false;
+          }
+      } catch ( URISyntaxException e ) { }
+    
+    return true;
+  }
 
 }

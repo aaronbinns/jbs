@@ -14,29 +14,18 @@
  * permissions and limitations under the License.
  */
 
-package org.archive.jbs;
+package org.archive.jbs.filter;
 
-import java.io.*;
-import java.net.*;
+import org.archive.jbs.Document;
 
 /**
- * Simple DocumentFilter that ensures certain document properties have
- * non-empty values.  For example, a URL and non-empty title and
- * content fields.
+ * Interface for family of implementors which filter out documents
+ * based on arbitrary rules.
+ *
+ * The Document are given to the filter, which returns true
+ * if the document is allowed and false if not.
  */
-public class RequiredFieldsFilter implements DocumentFilter
+public interface DocumentFilter
 {
-
-  public boolean isAllowed( Document document )
-  {
-    if ( document.get("url"    ).length() == 0 ||
-         document.get("title"  ).length() == 0 &&
-         document.get("content").length() == 0 )
-      {
-        return false;
-      }
-    
-    return true;
-  }
-
+  public boolean isAllowed( Document document );
 }

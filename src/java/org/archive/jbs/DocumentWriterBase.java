@@ -25,6 +25,8 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
 
+import org.archive.jbs.filter.*;
+
 /**
  * Sub-classes take the given MapWritable, create a document from it
  * and write it to an index.

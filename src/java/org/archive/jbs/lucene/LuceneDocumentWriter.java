@@ -26,6 +26,7 @@ import org.apache.lucene.index.*;
 
 import org.archive.jbs.Document;
 import org.archive.jbs.*;
+import org.archive.jbs.filter.*;
 
 /**
  * The LuceneDocumentWriter converts a Document into a Lucene Document

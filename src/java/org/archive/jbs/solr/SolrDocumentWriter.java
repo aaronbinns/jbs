@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 
 import org.archive.jbs.*;
+import org.archive.jbs.filter.*;
 import org.archive.jbs.util.*;
 
 /**

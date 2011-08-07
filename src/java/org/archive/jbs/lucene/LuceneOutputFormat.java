@@ -35,6 +35,7 @@ import org.apache.lucene.store.*;
 import org.archive.jbs.Document;
 import org.archive.jbs.*;
 import org.archive.jbs.util.*;
+import org.archive.jbs.filter.*;
 
 /**
  * This class is inspired by Nutch's LuceneOutputFormat class.  It does

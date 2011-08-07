@@ -14,33 +14,29 @@
  * permissions and limitations under the License.
  */
 
-package org.archive.jbs;
+package org.archive.jbs.filter;
 
 import java.io.*;
 import java.net.*;
 
+import org.archive.jbs.Document;
+
 /**
- * Simple DocumentFilter that filters out robots and favicon URLs.
+ * Simple DocumentFilter that ensures certain document properties have
+ * non-empty values.  For example, a URL and non-empty title and
+ * content fields.
  */
-public class RobotsFilter implements DocumentFilter
+public class RequiredFieldsFilter implements DocumentFilter
 {
 
   public boolean isAllowed( Document document )
   {
-    String url  = document.get( "url" );
-    
-    try
+    if ( document.get("url"    ).length() == 0 ||
+         document.get("title"  ).length() == 0 &&
+         document.get("content").length() == 0 )
       {
-        URI uri = new URI( url );
-        
-        String path = uri.getPath().trim( );
-
-        if ( "/favicon.ico".equals( path ) ||
-             "/robots.txt" .equals( path ) )
-          {
-            return false;
-          }
-      } catch ( URISyntaxException e ) { }
+        return false;
+      }
     
     return true;
   }

@@ -25,6 +25,7 @@ import org.apache.lucene.index.*;
 
 import org.archive.jbs.Document;
 import org.archive.jbs.*;
+import org.archive.jbs.filter.*;
 
 /**
  * Custom FieldHandler implementation for type.
