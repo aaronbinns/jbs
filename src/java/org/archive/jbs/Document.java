@@ -16,6 +16,9 @@
 
 package org.archive.jbs;
 
+import java.util.*;
+
+
 /**
  * Simple interface for any number of implementors to provide Map-like
  * functionality returning a value for a key.
@@ -28,5 +31,6 @@ package org.archive.jbs;
  */
 public interface Document
 {
-  public String get( String key );
+  public String      get   ( String key );
+  public Set<String> getAll( String key );
 }
