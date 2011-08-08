@@ -53,6 +53,9 @@ public class SolrOutputFormat extends FileOutputFormat<Text, Document>
 
     SolrDocumentWriter solrDocWriter = new SolrDocumentWriter( new URL( serverUrl ), docBufSize );
 
+    // FIXME: Temporary collection hack
+    solrDocWriter.collectionHack = job.get( "jbs.solr.collectionHack", null );
+
     TypeNormalizer normalizer = new TypeNormalizer( );
     Map<String,String> aliases = normalizer.parseAliases( job.get( "jbs.typeNormalizer.aliases", "" ) );
 

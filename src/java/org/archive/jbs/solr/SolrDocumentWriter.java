@@ -36,8 +36,9 @@ public class SolrDocumentWriter extends DocumentWriterBase
 {
   private SolrServer server;
   private Queue<SolrInputDocument> docBuffer;
-  private TypeNormalizer typeNormalizer;
   private IDNHelper helper;
+  
+  String collectionHack = "";
 
   public SolrDocumentWriter( URL url, int docBufferSize )
     throws IOException
@@ -74,13 +75,27 @@ public class SolrDocumentWriter extends DocumentWriterBase
     // Use a 64-bit fingerprint of the URL+digest as the key.
     doc.addField( "id",  FPGenerator.std64.fp(key) );
     
-    for ( String p : new String[] { "url", "digest", "title", "length", "collection", "boiled" } )
+    // General properties.
+    for ( String p : new String[] { "url", "digest", "title", "length", "boiled" } )
       {
         String value = document.get( p );
 
-        if ( value.length() > 0 ) doc.addField( p, document.get( p ) );
+        if ( value.length() > 0 ) doc.addField( p, value );
       }
 
+    // FIXME: Temporary collection hack
+    if ( collectionHack != null )
+      {
+        if ( collectionHack.length( ) > 0 ) doc.addField( "collection", collectionHack );
+      }
+    else
+      {
+        String value = document.get( "collection" );
+
+        if ( value.length() > 0 ) doc.addField( "collection", value );
+      }
+
+    // Document body, i.e the "content"
     doc.addField( "content", document.get( "content_parsed" ) );
 
     // Solr requires the date to be in the form: 1995-12-31T23:59:59Z
