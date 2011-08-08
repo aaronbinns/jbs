@@ -41,15 +41,12 @@ public class DateHandler implements FieldHandler
 
   public void handle( org.apache.lucene.document.Document luceneDocument, Document document )
   {
-    // Special handling for dates.
-    HashSet<String> dates = new HashSet<String>( Arrays.asList( document.get("date").split( "\\s+" ) ) );
-    
-    for ( String date : dates )
+    for ( String date : document.getAll( "date" ) )
       {
         if ( date.length() == "yyyymmddhhmmss".length( ) )
           {
             // Store, but do not index, the full 14-character date.
-            luceneDocument.add( new Field( "date", date,                   Field.Store.YES, Field.Index.NO  ) );
+            luceneDocument.add( new Field( "date", date, Field.Store.YES, Field.Index.NO  ) );
             
             // Index, but do not store, the year and the year+month.  These are what can be searched.
             luceneDocument.add( new Field( "date", date.substring( 0, 4 ), Field.Store.NO,  Field.Index.NOT_ANALYZED_NO_NORMS ) );
