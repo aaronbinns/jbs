@@ -101,7 +101,7 @@ public class SolrDocumentWriter extends DocumentWriterBase
     // Solr requires the date to be in the form: 1995-12-31T23:59:59Z
     // See the Solr schema docs.
     HashSet<String> dates = new HashSet<String>( Arrays.asList( document.get("date").split( "\\s+" ) ) );
-    for ( String date : dates )
+    for ( String date : document.getAll( "date" ) )
       {
         if ( date.length() == "yyyymmddhhmmss".length() )
           {
