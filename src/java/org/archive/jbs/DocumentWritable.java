@@ -30,27 +30,15 @@ public class DocumentWritable implements Writable, Document
   }
 
   /**
-   * Get the String value of the property key *and* return "" rather
-   * than 'null' if no property value is defined.
+   * Get the String value for the property key.  If the property has
+   * multiple values, get one of them.  If the property doesn't exist
+   * or has no value, return "" rather than null.
    */
   public String get( String key )
   {
-    String value = getValue( key );
-    
-    if ( value == null ) return "";
-
-    return value;
-  }
-
-  /**
-   * Get the String value for the property key.  If the property has
-   * multiple values, get one of them.
-   */
-  public String getValue( String key )
-  {
     Object value = properties.get( key );
 
-    if ( value == null ) return null;
+    if ( value == null ) return "";
 
     if ( value instanceof Set )
       {
@@ -66,7 +54,7 @@ public class DocumentWritable implements Writable, Document
         return (String) value;
       }
 
-    return null;
+    return "";
   }
   
   /**
