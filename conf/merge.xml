@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<!-- 
+  This configuration file can be used for merging multiple document
+  stores into a single, merged and de-duplicated document set.
+ -->
+<configuration>
+  <property>
+    <name>jbs.outputformat.class</name>
+    <value>org.apache.hadoop.mapred.MapFileOutputFormat</value>
+  </property>
+  <property>
+    <name>mapred.output.compress</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>mapred.output.compression.type</name>
+    <value>BLOCK</value>
+  </property>
+  <property>
+    <name>mapred.output.compression.codec</name>
+    <value>org.apache.hadoop.io.compress.DefaultCodec</value>
+  </property>
+</configuration>

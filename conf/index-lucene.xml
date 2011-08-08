@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<!-- 
+  This configuration file can be used for indexing documents
+  with Lucene.
+ -->
+<configuration>
+  <property>
+    <name>jbs.outputformat.class</name>
+    <value>org.archive.jbs.lucene.LuceneOutputFormat</value>
+  </property>
+</configuration>
