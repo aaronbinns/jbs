@@ -1,0 +1,307 @@
+/*
+ * Copyright 2010 Internet Archive
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
+package org.archive.jbs.misc;
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
+
+import org.apache.hadoop.conf.*;
+import org.apache.hadoop.fs.*;
+import org.apache.hadoop.io.*;
+import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.util.*;
+import org.apache.hadoop.mapred.lib.MultipleInputs;
+
+import org.apache.nutch.parse.ParseData;
+import org.apache.nutch.parse.ParseText;
+import org.apache.nutch.parse.Outlink;
+import org.apache.nutch.metadata.Metadata;
+
+import org.archive.jbs.util.*;
+
+/**
+ * <p>
+ *   MapReduce code to count links between sties, based on the 
+ *   links in a NutchWAX segment.
+ * </p>
+ * <p>
+ *   <strong>NOTE:</strong> This class is currently experimental and
+ *   is not used in production.  If it's ultimately not useful, it will
+ *   likely be removed.
+ * </p>
+ */
+public class PageRanker extends Configured implements Tool
+{
+  public static class Map extends MapReduceBase implements Mapper<Text, Writable, Text, GenericObject>
+  {
+    private boolean   ignoreInternalLinks = true;
+    private IDNHelper idnHelper;
+
+    public void configure( JobConf job )
+    {
+      this.ignoreInternalLinks = job.getBoolean( "pageranker.ignoreInternalLinks", true );
+
+      try
+        {
+          this.idnHelper = buildIDNHelper( job );
+        }
+      catch ( IOException ioe )
+        {
+          throw new RuntimeException( ioe );
+        }
+    }
+
+    public void map( Text key, Writable value, OutputCollector<Text, GenericObject> output, Reporter reporter)
+      throws IOException
+    {
+      if ( ! ( value instanceof ParseData ) )
+        {
+          // Don't care if this is something other than the ParseData.
+          return ;
+        }
+        
+      ParseData pd = (ParseData) value;
+     
+      String[] keyParts = key.toString().split("\\s+");
+
+      // Maformed key, should be "url digest".  Skip it.
+      if ( keyParts.length != 2 ) return;
+
+      String fromUrl    = keyParts[0];
+      String fromDigest = keyParts[1];
+      String fromHost   = getHost( fromUrl );
+
+      // If there is no fromHost, skip it.
+      if ( fromHost == null || fromHost.length() == 0 ) return;
+
+      // Emit the source URL with it's digest as the payload.
+      System.out.println( "map: fromUrl: " + fromUrl + " fromDigest: " + fromDigest );
+      output.collect( new Text( fromUrl ), new GenericObject( new Text( fromDigest ) ) );
+
+      // Time to process the outlinks, inverting them to make inlinks.
+      Outlink[] outlinks = pd.getOutlinks();
+ 
+      // If no outlinks, skip the rest.
+      if ( outlinks.length == 0 ) return ;
+
+      Text inlink = new Text( );
+      GenericObject one = new GenericObject( new LongWritable( 1 ) );
+
+      for (int i = 0; i < outlinks.length; i++) 
+        {
+          Outlink outlink = outlinks[i];
+          
+          // FIXME: Use a Heritrix UURI to do minimal canonicalization
+          //        of the toUrl.  This way, it will match the URL if
+          //        we actually crawled it.
+          String toUrl  = outlink.getToUrl().trim();
+          String toHost = getHost( toUrl );
+
+          // If the toHost is null, then there was a serious problem
+          // with the URL, so we just skip it.
+          if ( toHost == null ) continue;
+
+          // But if the toHost is empty, then assume the URL is a
+          // relative URL within the fromHost's site.
+          if ( toHost.length() == 0 ) toHost = fromHost;
+
+          // If we are ignoring intra-site links, then skip it.
+          if ( ignoreInternalLinks && fromHost.equals( toHost ) ) continue ;
+          
+          inlink.set( toUrl );
+
+          System.out.println( "map: toUrl: " + toUrl + " value: " + one );
+          output.collect( inlink, one );
+        }
+    }
+
+    public String getHost( String url )
+    {
+      try
+        {
+          return idnHelper.getDomain( new URL(url) );
+        }
+      catch ( Exception e )
+        {
+          return null;
+        }
+    }
+  }
+  
+  public static class Reduce extends MapReduceBase implements Reducer<Text, GenericObject, Text, LongWritable> 
+  {
+    public void reduce( Text key, Iterator<GenericObject> values, OutputCollector<Text, LongWritable> output, Reporter reporter)
+      throws IOException
+    {
+      long sum = 0;
+
+      Set<String> digests = new HashSet<String>( );
+
+      while ( values.hasNext( ) )
+        {
+          Writable value = values.next( ).get( );
+
+          System.out.println( "reduce: key=" + key.toString() + " value=" + value );
+
+          if ( value instanceof Text )
+            {
+              String newDigest = ((Text) value).toString();
+              
+              digests.add( newDigest );
+            }
+          else if ( value instanceof LongWritable )
+            {
+              LongWritable count = (LongWritable) value;
+              
+              sum += count.get( );
+            }
+          else
+            {
+              // Hrmm...should only be one of the previous two.
+              System.out.println( "reduce: unknown value type: " + value );
+              continue ;
+            }
+        }
+      
+      // Ok, now we have:
+      //  key     : the url
+      //  digests : all the digests for that url
+      //  sum     : num of inlinks to that url
+      //
+      // Emit all "url digest" combos, with the sum total of the
+      // inlinks.  If there is no digest, then we don't emit a record.
+      // This is good because if there is no digest, then we do not
+      // have any captures for that URL -- i.e.  we never crawled it.
+
+      // If no inlinks, do not bother emitting an output value.
+      if ( sum == 0 ) return ;
+
+      Text          outkey = new Text( );
+      LongWritable  outval = new LongWritable( sum );
+
+      for ( String digest : digests )
+        {
+          outkey.set( key + " " + digest ); 
+          output.collect( outkey, outval );
+        }
+    }
+  }
+
+  public static class GenericObject extends GenericWritable
+  {
+    private static Class[] CLASSES = {
+      Text        .class, 
+      LongWritable.class,
+    };
+
+    public GenericObject( )
+    {
+      super();
+    }
+
+    public GenericObject( Writable w )
+    {
+      super();
+      super.set( w );
+    }
+    
+    protected Class[] getTypes()
+    {
+      return CLASSES;
+    }
+ }
+
+  public static IDNHelper buildIDNHelper( JobConf job )
+    throws IOException
+  {
+    IDNHelper helper = new IDNHelper( );
+
+    if ( job.getBoolean( "jbs.idnHelper.useDefaults", true ) )
+      {
+        InputStream is = PageRanker.class.getClassLoader( ).getResourceAsStream( "effective_tld_names.dat" );
+        
+        if ( is == null )
+          {
+            throw new RuntimeException( "Cannot load default tld rules: effective_tld_names.dat" );
+          }
+        
+        Reader reader = new InputStreamReader( is, "utf-8" );
+       
+        helper.addRules( reader );
+      }
+
+    String moreRules = job.get( "jbs.idnHelper.moreRules", "" );
+    
+    if ( moreRules.length() > 0 )
+      {
+        helper.addRules( new StringReader( moreRules ) );
+      }
+
+    return helper;
+  }
+
+  public static void main(String[] args) throws Exception
+  {
+    int result = ToolRunner.run( new JobConf(PageRanker.class), new PageRanker(), args );
+
+    System.exit( result );
+  }
+
+  public int run( String[] args ) throws Exception
+  {
+    if (args.length < 2)
+      {
+        System.err.println( "PageRanker <output> <input>..." );
+        return 1;
+      }
+      
+    JobConf conf = new JobConf( getConf(), PageRanker.class);
+    conf.setJobName("PageRanker");
+        
+    conf.setMapperClass(Map.class);
+    conf.setReducerClass(Reduce.class);
+    
+    conf.setMapOutputKeyClass(Text.class);
+    conf.setMapOutputValueClass(GenericObject.class);
+    conf.setOutputKeyClass(Text.class);
+    conf.setOutputValueClass(LongWritable.class);
+    
+    conf.setOutputFormat(TextOutputFormat.class);
+    
+    // Assume the inputs are NutchWAX segments.
+    for ( int i = 1; i < args.length ; i++ )
+      {
+        Path p = new Path( args[i] );
+
+        if ( ! p.getFileSystem( conf ).isFile( p ) )
+          {
+            FileInputFormat.setInputPaths( conf, new Path( p, "parse_data" ) );
+          }
+
+      }
+
+    conf.setInputFormat(SequenceFileInputFormat.class);
+
+    FileOutputFormat.setOutputPath(conf, new Path(args[0]));
+
+    JobClient.runJob(conf);
+    
+    return 0;
+  }
+
+}
