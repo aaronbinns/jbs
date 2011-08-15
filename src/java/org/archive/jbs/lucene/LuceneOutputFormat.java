@@ -59,9 +59,9 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
   public IndexWriter indexer;
 
   public RecordWriter<Text, Document> getRecordWriter( final FileSystem fs,
-                                                          final JobConf job,
-                                                          final String name,
-                                                          final Progressable progress )
+                                                       final JobConf job,
+                                                       final String name,
+                                                       final Progressable progress )
     throws IOException
   {
     // Open Lucene index in ${temp}
