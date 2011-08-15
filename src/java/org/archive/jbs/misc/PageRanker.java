@@ -32,6 +32,7 @@ import org.apache.nutch.parse.ParseText;
 import org.apache.nutch.parse.Outlink;
 import org.apache.nutch.metadata.Metadata;
 
+import org.archive.jbs.DocumentWritable;
 import org.archive.jbs.util.*;
 
 /**
@@ -53,7 +54,7 @@ import org.archive.jbs.util.*;
  *   must be page-ranked as one job.
  * </p>
  * <p>
- *   The output is of the form:
+ *   The output is of the form:<br>
  *     &lt;url&gt; &lt;digest&gt; &lt;# inlinks&gt;
  * </p>
  */
@@ -61,6 +62,9 @@ public class PageRanker extends Configured implements Tool
 {
   public static class Map extends MapReduceBase implements Mapper<Text, Writable, Text, GenericObject>
   {
+    private static final GenericObject ONE = new GenericObject( new LongWritable( 1 ) );
+
+
     private boolean   ignoreInternalLinks = true;
     private IDNHelper idnHelper;
 
@@ -81,14 +85,6 @@ public class PageRanker extends Configured implements Tool
     public void map( Text key, Writable value, OutputCollector<Text, GenericObject> output, Reporter reporter)
       throws IOException
     {
-      if ( ! ( value instanceof ParseData ) )
-        {
-          // Don't care if this is something other than the ParseData.
-          return ;
-        }
-        
-      ParseData pd = (ParseData) value;
-     
       String[] keyParts = key.toString().split("\\s+");
 
       // Maformed key, should be "url digest".  Skip it.
@@ -102,26 +98,34 @@ public class PageRanker extends Configured implements Tool
       if ( fromHost == null || fromHost.length() == 0 ) return;
 
       // Emit the source URL with it's digest as the payload.
-      System.out.println( "map: fromUrl: " + fromUrl + " fromDigest: " + fromDigest );
       output.collect( new Text( fromUrl ), new GenericObject( new Text( fromDigest ) ) );
 
-      // Time to process the outlinks, inverting them to make inlinks.
-      Outlink[] outlinks = pd.getOutlinks();
- 
+      // Now, get the outlinks and emit records for them.
+      Set<String> uniqueOutlinks = null;
+      if ( value instanceof ParseData )
+        {
+          uniqueOutlinks = getOutlinks( (ParseData) value );
+        }
+      else if ( value instanceof DocumentWritable )
+        {
+          uniqueOutlinks = getOutlinks( (DocumentWritable) value );
+        }
+      else 
+        {
+          // Hrmm...what type could it be...
+          return ;
+        }
+        
       // If no outlinks, skip the rest.
-      if ( outlinks.length == 0 ) return ;
+      if ( uniqueOutlinks.size() == 0 ) return ;
 
       Text inlink = new Text( );
-      GenericObject one = new GenericObject( new LongWritable( 1 ) );
-
-      for (int i = 0; i < outlinks.length; i++) 
-        {
-          Outlink outlink = outlinks[i];
-          
+      for ( String outlink : uniqueOutlinks )
+        {          
           // FIXME: Use a Heritrix UURI to do minimal canonicalization
           //        of the toUrl.  This way, it will match the URL if
           //        we actually crawled it.
-          String toUrl  = outlink.getToUrl().trim();
+          String toUrl  = outlink;
           String toHost = getHost( toUrl );
 
           // If the toHost is null, then there was a serious problem
@@ -137,8 +141,7 @@ public class PageRanker extends Configured implements Tool
           
           inlink.set( toUrl );
 
-          System.out.println( "map: toUrl: " + toUrl + " value: " + one );
-          output.collect( inlink, one );
+          output.collect( inlink, ONE );
         }
     }
 
@@ -152,6 +155,34 @@ public class PageRanker extends Configured implements Tool
         {
           return null;
         }
+    }
+
+    public Set<String> getOutlinks( ParseData parsedata )
+    {
+      Outlink[] outlinks = parsedata.getOutlinks();
+      
+      if ( outlinks.length == 0 ) return Collections.emptySet();
+
+      Set<String> uniqueOutlinks = new HashSet<String>( outlinks.length );
+
+      for ( Outlink outlink : outlinks )
+        {
+          uniqueOutlinks.add( outlink.getToUrl().trim() );
+        }
+      
+      return uniqueOutlinks;
+    }
+
+    public Set<String> getOutlinks( DocumentWritable document )
+    {
+      Set<String> uniqueOutlinks = new HashSet<String>( 16 );
+      
+      for ( DocumentWritable.Link link : document.getLinks( ) )
+        {
+          uniqueOutlinks.add( link.getUrl( ) );
+        }
+
+      return uniqueOutlinks;
     }
   }
   
@@ -167,8 +198,6 @@ public class PageRanker extends Configured implements Tool
       while ( values.hasNext( ) )
         {
           Writable value = values.next( ).get( );
-
-          System.out.println( "reduce: key=" + key.toString() + " value=" + value );
 
           if ( value instanceof Text )
             {
@@ -284,30 +313,49 @@ public class PageRanker extends Configured implements Tool
       
     JobConf conf = new JobConf( getConf(), PageRanker.class);
     conf.setJobName("PageRanker");
-        
-    conf.setMapperClass(Map.class);
+    
+    // No need to set this since we use the MultipleInputs class
+    // below, which allows us to specify a mapper for each input.
+    // conf.setMapperClass(Map.class);
     conf.setReducerClass(Reduce.class);
     
     conf.setMapOutputKeyClass(Text.class);
     conf.setMapOutputValueClass(GenericObject.class);
+
     conf.setOutputKeyClass(Text.class);
     conf.setOutputValueClass(LongWritable.class);
-    
+
     conf.setOutputFormat(TextOutputFormat.class);
     
-    // Assume the inputs are NutchWAX segments.
+    // Add the input paths as either NutchWAX segment directories or
+    // text .dup files.
     for ( int i = 1; i < args.length ; i++ )
       {
         Path p = new Path( args[i] );
 
-        if ( ! p.getFileSystem( conf ).isFile( p ) )
+        // Expand any file globs and then check each matching path
+        FileStatus[] files = FileSystem.get( conf ).globStatus( p );
+
+        for ( FileStatus file : files )
           {
-            FileInputFormat.setInputPaths( conf, new Path( p, "parse_data" ) );
+            if ( file.isDir( ) )
+              {
+                // If it's a directory, then check if it is a Nutch segment, otherwise treat as a SequenceFile.
+                if ( p.getFileSystem( conf ).exists( new Path( file.getPath( ), "parse_data" ) ) )
+                  {
+                    MultipleInputs.addInputPath( conf, new Path( p, "parse_data" ), SequenceFileInputFormat.class, Map.class );
+                  }
+                else
+                  {
+                    MultipleInputs.addInputPath( conf, p, SequenceFileInputFormat.class, Map.class );
+                  }
+              }
+            else 
+              {
+                // Not a directory, skip it.
+              }
           }
-
       }
-
-    conf.setInputFormat(SequenceFileInputFormat.class);
 
     FileOutputFormat.setOutputPath(conf, new Path(args[0]));
 
