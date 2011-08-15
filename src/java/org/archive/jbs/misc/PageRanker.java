@@ -36,13 +36,25 @@ import org.archive.jbs.util.*;
 
 /**
  * <p>
- *   MapReduce code to count links between sties, based on the 
- *   links in a NutchWAX segment.
+ *   Map/Reduce job to produce "page rank" information.  In this case,
+ *   we are merely counting the number of links <em>to</em> a URL that
+ *   is in the collection.
  * </p>
  * <p>
- *   <strong>NOTE:</strong> This class is currently experimental and
- *   is not used in production.  If it's ultimately not useful, it will
- *   likely be removed.
+ *   Since the URLs in an archival collection are keyed by a
+ *   combination of URL and digest, yet the outlinks on a page only
+ *   have a URL (no digest of the linked-to page), we apply links to a
+ *   URL to all versions of that URL.
+ * </p>
+ * <p>
+ *   This map/reduce job performs both tasks: counting the number of
+ *   inlinks, and matching the URLs to the URL+hash keys of the pages
+ *   in the collection.  This means that an <em>entire</em> collection
+ *   must be page-ranked as one job.
+ * </p>
+ * <p>
+ *   The output is of the form:
+ *     &lt;url&gt; &lt;digest&gt; &lt;# inlinks&gt;
  * </p>
  */
 public class PageRanker extends Configured implements Tool
