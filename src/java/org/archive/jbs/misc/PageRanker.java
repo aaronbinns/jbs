@@ -186,9 +186,12 @@ public class PageRanker extends Configured implements Tool
     }
   }
   
-  public static class Reduce extends MapReduceBase implements Reducer<Text, GenericObject, Text, LongWritable> 
+  public static class Reduce extends MapReduceBase implements Reducer<Text, GenericObject, Text, Text> 
   {
-    public void reduce( Text key, Iterator<GenericObject> values, OutputCollector<Text, LongWritable> output, Reporter reporter)
+    private Text outkey = new Text();
+    private Text outval = new Text();
+
+    public void reduce( Text key, Iterator<GenericObject> values, OutputCollector<Text, Text> output, Reporter reporter)
       throws IOException
     {
       long sum = 0;
@@ -232,8 +235,7 @@ public class PageRanker extends Configured implements Tool
       // If no inlinks, do not bother emitting an output value.
       if ( sum == 0 ) return ;
 
-      Text          outkey = new Text( );
-      LongWritable  outval = new LongWritable( sum );
+      outval.set( "numInlinks=" + sum );
 
       for ( String digest : digests )
         {
