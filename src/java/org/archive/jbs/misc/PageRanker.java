@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Internet Archive
+ * Copyright 2011 Internet Archive
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -54,20 +54,26 @@ import org.archive.jbs.util.*;
  *   must be page-ranked as one job.
  * </p>
  * <p>
- *   The output is of the form:<br>
- *     &lt;url&gt; &lt;digest&gt; &lt;# inlinks&gt;
+ *   The output is a Hadoop SequenceFile with a Text key and a
+ *   DocumentWritable as the value.  The DocumentWritable has a
+ *   property of "numInlinks" with corresponding value.
  * </p>
  */
 public class PageRanker extends Configured implements Tool
 {
   public static class Map extends MapReduceBase implements Mapper<Text, Writable, Text, GenericObject>
   {
+    // For efficiency, create one instance of the output object '1'.
     private static final GenericObject ONE = new GenericObject( new LongWritable( 1 ) );
-
 
     private boolean   ignoreInternalLinks = true;
     private IDNHelper idnHelper;
 
+    /**
+     * Configure the job by obtaining local copy of relevant
+     * properties as well as building the IDNHelper which is used for
+     * getting the host/domain of a URL.
+     */
     public void configure( JobConf job )
     {
       this.ignoreInternalLinks = job.getBoolean( "pageranker.ignoreInternalLinks", true );
@@ -81,7 +87,13 @@ public class PageRanker extends Configured implements Tool
           throw new RuntimeException( ioe );
         }
     }
-
+    
+    /**
+     * Map the document's outlinks to inlinks for the URL being
+     * linked-to.  Skip intra-domain links, or any that are malformed.
+     * Also emit the source URL with it's digest as the payload to the
+     * linked-to URLs can be joined with the list of captured URLs.
+     */
     public void map( Text key, Writable value, OutputCollector<Text, GenericObject> output, Reporter reporter)
       throws IOException
     {
@@ -145,6 +157,10 @@ public class PageRanker extends Configured implements Tool
         }
     }
 
+    /**
+     * Utility to return the host/domain of a URL, null if URL is
+     * malformed.
+     */
     public String getHost( String url )
     {
       try
@@ -157,6 +173,9 @@ public class PageRanker extends Configured implements Tool
         }
     }
 
+    /**
+     * Utility to return a set of the unique outlinks in a Nutch(WAX) ParseData object.
+     */
     public Set<String> getOutlinks( ParseData parsedata )
     {
       Outlink[] outlinks = parsedata.getOutlinks();
@@ -173,6 +192,9 @@ public class PageRanker extends Configured implements Tool
       return uniqueOutlinks;
     }
 
+    /**
+     * Utility to return a set of the unique outlinks in a JBs DocumentWritable
+     */
     public Set<String> getOutlinks( DocumentWritable document )
     {
       Set<String> uniqueOutlinks = new HashSet<String>( 16 );
@@ -186,12 +208,16 @@ public class PageRanker extends Configured implements Tool
     }
   }
   
-  public static class Reduce extends MapReduceBase implements Reducer<Text, GenericObject, Text, Text> 
+  public static class Reduce extends MapReduceBase implements Reducer<Text, GenericObject, Text, DocumentWritable> 
   {
-    private Text outkey = new Text();
-    private Text outval = new Text();
+    // For efficiency, only create one instance of the outputKey and outputValue
+    private Text             outputKey   = new Text();
+    private DocumentWritable outputValue = new DocumentWritable();
 
-    public void reduce( Text key, Iterator<GenericObject> values, OutputCollector<Text, Text> output, Reporter reporter)
+    /**
+     * 
+     */
+    public void reduce( Text key, Iterator<GenericObject> values, OutputCollector<Text, DocumentWritable> output, Reporter reporter)
       throws IOException
     {
       long sum = 0;
@@ -235,12 +261,12 @@ public class PageRanker extends Configured implements Tool
       // If no inlinks, do not bother emitting an output value.
       if ( sum == 0 ) return ;
 
-      outval.set( "numInlinks=" + sum );
+      outputValue.set( "numInlinks", Long.toString(sum) );
 
       for ( String digest : digests )
         {
-          outkey.set( key + " " + digest ); 
-          output.collect( outkey, outval );
+          outputKey.set( key + " " + digest ); 
+          output.collect( outputKey, outputValue );
         }
     }
   }
@@ -325,9 +351,9 @@ public class PageRanker extends Configured implements Tool
     conf.setMapOutputValueClass(GenericObject.class);
 
     conf.setOutputKeyClass(Text.class);
-    conf.setOutputValueClass(LongWritable.class);
+    conf.setOutputValueClass(DocumentWritable.class);
 
-    conf.setOutputFormat(TextOutputFormat.class);
+    conf.setOutputFormat(SequenceFileOutputFormat.class);
     
     // Add the input paths as either NutchWAX segment directories or
     // text .dup files.
