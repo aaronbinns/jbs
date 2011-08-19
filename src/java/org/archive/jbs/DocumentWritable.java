@@ -236,7 +236,7 @@ public class DocumentWritable implements Writable, Document
   }
 
   /**
-   *
+   * 
    */
   public void addLink( String url, String text )
   {
@@ -362,6 +362,13 @@ public class DocumentWritable implements Writable, Document
       {
         links.add( new Link( Text.readString( in ) , Text.readString( in ) ) );
       }
+  }
+
+  public String toString( )
+  {
+    StringBuilder sb = new StringBuilder( "properties: " + this.properties.toString() );
+    sb.append( " links: " + links.toString() );
+    return sb.toString();
   }
 
   public static class Link
