@@ -56,6 +56,8 @@ public class Main extends Configured implements Tool
    */
   public static class TextMapper extends MapReduceBase implements Mapper<LongWritable,Text,Text,DocumentWritable>
   {
+    private Text newKey = new Text( );
+    
     public void map( LongWritable key, Text value, OutputCollector<Text,DocumentWritable> output, Reporter reporter )
       throws IOException
     {
@@ -63,32 +65,36 @@ public class Main extends Configured implements Tool
         {
           String[] line = value.toString().trim().split("\\s+");
 
-          Text newKey   = null;
-          Text newValue = null;
-
           switch ( line.length )
             {
-              // Handle lines from "dup" files.
+              // Handle lines from text files with property values
             case 3:
-              newKey   = new Text( line[0] + " " + line[1] );
-              newValue = new Text( line[2] );
+              newKey.set( line[0] + " " + line[1] );
+              
+              String[] property = line[2].split( "=" );
+              if ( property.length == 2 )
+                {
+                  DocumentWritable doc = new DocumentWritable( );
+                  doc.set( property[0], property[1] );
+
+                  output.collect( newKey, doc );
+                }
               break ;
 
               // Handle lines from "cdx" files.
-            case 9:
-              newKey   = new Text( line[0] + " sha1:" + line[5] );
-              newValue = new Text( line[1] );
+            case  9:
+              newKey.set( line[0] + " sha1:" + line[5] );
+
+              DocumentWritable doc = new DocumentWritable( );
+              doc.set( "date", line[1] );
+              
+              output.collect( newKey, doc );
               break ;
 
             default:
               // Skip it
               return ;
             }
-          
-          DocumentWritable doc = new DocumentWritable( );
-          doc.add( "date", newValue.toString( ) );
-
-          output.collect( newKey, doc );
         }
       catch ( Exception e )
         {
@@ -148,7 +154,8 @@ public class Main extends Configured implements Tool
 
       while ( values.hasNext( ) )
         {
-          doc.merge( values.next( ) );
+          DocumentWritable value = values.next();
+          doc.merge( value );
         }
 
       output.collect( key, doc );
