@@ -52,7 +52,7 @@ import org.archive.jbs.filter.*;
 public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
 {
   public FileSystem fs;
-
+  public JobConf job;
   public Path temp;
   public Path perm;
   
@@ -65,8 +65,8 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
     throws IOException
   {
     // Open Lucene index in ${temp}
-    this.fs = FileSystem.get(job);
-
+    this.fs   = FileSystem.get(job);
+    this.job  = job;
     this.perm = new Path( FileOutputFormat.getOutputPath( job ), name );
     this.temp = job.getLocalPath( "index/_"  + (new Random().nextInt()) );
 
@@ -111,7 +111,10 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
       throws IOException
     {
       // Optimize and close the IndexWriter
-      // indexer.optimize();
+      if ( job.getBoolean( "jbs.lucene.optimize", false ) )
+        {
+          indexer.optimize();
+        }
       indexer.close();
       
       // Copy the index from ${temp} to HDFS and touch a "done" file.
@@ -153,6 +156,7 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
     handlers.put( "date"      , new DateHandler( ) );
     handlers.put( "site"      , new SiteHandler( idnHelper ) );
     handlers.put( "type"      , new TypeHandler( normalizer ) );  
+    handlers.put( "boost"     , new BoostHandler( ) );
 
     writer.setHandlers( handlers );
     
