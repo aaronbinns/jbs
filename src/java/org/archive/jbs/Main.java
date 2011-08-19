@@ -219,12 +219,13 @@ public class Main extends Configured implements Tool
                   }
                 else
                   {
+                    // Assume it's a SequenceFile of DocumentWritables.
                     MultipleInputs.addInputPath( conf, p, SequenceFileInputFormat.class, IdentityMapper.class );
                   }
               }
             else 
               {
-                // Not a directory, assume it's a cdx/dup text file.
+                // Not a directory, assume it's a text file, either CDX or property specifications.
                 MultipleInputs.addInputPath( conf, new Path( args[i] ), TextInputFormat.class, TextMapper.class );
               }
           }
