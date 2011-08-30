@@ -120,7 +120,7 @@ public class Main extends Configured implements Tool
           doc.set( "title", pd.getTitle( ) );
           
           Metadata meta = pd.getContentMeta( );
-          for ( String name : new String[] { "url", "digest", "length", "collection", "boiled", "date", "type" } )
+          for ( String name : new String[] { "url", "digest", "length", "collection", "boiled", "date", "type", "keywords", "description" } )
             {
               doc.set( name, meta.get( name ) );
             }
