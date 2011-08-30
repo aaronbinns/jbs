@@ -47,7 +47,7 @@ public class BoostHandler implements FieldHandler
         // it actually have any operational effect.  It's just so that
         // we can know later what boost value we set on the document.
         // There's no other way to tell.
-        luceneDocument.add( new Field( "boost", Float.toString(boost), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
+        luceneDocument.add( new Field( "boost", Float.toString(boost), Field.Store.YES, Field.Index.NO ) );
 
         luceneDocument.setBoost( boost );
       }
