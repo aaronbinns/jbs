@@ -107,6 +107,10 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
       this.docWriter.add( key.toString(), document );
     }
 
+    /**
+     * Closing the LuceneRecordWriter closes the Lucene index,
+     * optionally optimizes it and finally copies it into HDFS.
+     */
     public void close( Reporter reporter )
       throws IOException
     {
@@ -147,16 +151,19 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
     int textMaxLength = job.getInt( "jbs.lucene.text.maxlength", TextHandler.MAX_LENGTH );
 
     Map<String,FieldHandler> handlers = new HashMap<String,FieldHandler>( );
-    handlers.put( "url"       , new SimpleFieldHandler( "url",        Field.Store.YES, Field.Index.NO ) );
-    handlers.put( "title"     , new SimpleFieldHandler( "title",      Field.Store.YES, Field.Index.ANALYZED ) );
-    handlers.put( "length"    , new SimpleFieldHandler( "length",     Field.Store.YES, Field.Index.NO ) );
-    handlers.put( "collection", new SimpleFieldHandler( "collection", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
-    handlers.put( "content"   , new TextHandler( "content", "content_parsed", textMaxLength ) );
-    handlers.put( "boiled"    , new TextHandler( "boiled" ,                   textMaxLength ) );
-    handlers.put( "date"      , new DateHandler( ) );
-    handlers.put( "site"      , new SiteHandler( idnHelper ) );
-    handlers.put( "type"      , new TypeHandler( normalizer ) );  
-    handlers.put( "boost"     , new BoostHandler( ) );
+    handlers.put( "url"        , new SimpleFieldHandler( "url",         Field.Store.YES, Field.Index.ANALYZED ) );
+    handlers.put( "digest"     , new SimpleFieldHandler( "digest",      Field.Store.YES, Field.Index.NO       ) );
+    handlers.put( "title"      , new SimpleFieldHandler( "title",       Field.Store.YES, Field.Index.ANALYZED ) );
+    handlers.put( "keywords"   , new SimpleFieldHandler( "keywords",    Field.Store.YES, Field.Index.ANALYZED ) );
+    handlers.put( "description", new SimpleFieldHandler( "description", Field.Store.YES, Field.Index.ANALYZED ) );
+    handlers.put( "length"     , new SimpleFieldHandler( "length",      Field.Store.YES, Field.Index.NO ) );
+    handlers.put( "collection" , new SimpleFieldHandler( "collection",  Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
+    handlers.put( "content"    , new TextHandler( "content", "content_parsed", textMaxLength ) );
+    handlers.put( "boiled"     , new TextHandler( "boiled" ,                   textMaxLength ) );
+    handlers.put( "date"       , new DateHandler( ) );
+    handlers.put( "site"       , new SiteHandler( idnHelper ) );
+    handlers.put( "type"       , new TypeHandler( normalizer ) );  
+    handlers.put( "boost"      , new BoostHandler( ) );
 
     writer.setHandlers( handlers );
     
@@ -238,5 +245,4 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
     return helper;
   }
 
-    
 }
