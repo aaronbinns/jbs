@@ -25,6 +25,8 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapred.lib.*;
 import org.apache.hadoop.util.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.apache.nutch.parse.ParseData;
 import org.apache.nutch.parse.ParseText;
@@ -51,6 +53,8 @@ import org.apache.nutch.metadata.Metadata;
  */
 public class Main extends Configured implements Tool
 {
+  public static final Log LOG = LogFactory.getLog(Main.class);
+
   /**
    * Mapper that handles text files of various formats, primarily CDX and "revisit" files.
    */
@@ -173,12 +177,11 @@ public class Main extends Configured implements Tool
   {
     if ( args.length < 2 )
       {
-        System.err.println( "Main <output> <input>..." );
+        System.err.println( "jbs.Main <output> <input>..." );
         return 1;
       }
       
     JobConf conf = new JobConf( getConf(), Main.class);
-    conf.setJobName("Main");
     
     conf.setOutputKeyClass(Text.class);
     conf.setOutputValueClass(DocumentWritable.class);
@@ -197,6 +200,10 @@ public class Main extends Configured implements Tool
     // org.apache.hadoop.mapred.MapFileOutputFormat
     //    - writes merged documents to Hadoop MapFile
     conf.setOutputFormat( (Class) Class.forName( conf.get( "jbs.outputformat.class", "org.apache.hadoop.mapred.MapFileOutputFormat" ) ) );
+    
+    // Set the Hadoop job name to incorporate the output format name.
+    String formatName = conf.getOutputFormat().getClass().getName();
+    conf.setJobName( "jbs.Main " + formatName.substring( formatName.lastIndexOf('.') != -1 ? (formatName.lastIndexOf('.') + 1) : 0 ) );
 
     // Add the input paths as either NutchWAX segment directories or
     // text .dup files.
@@ -212,21 +219,24 @@ public class Main extends Configured implements Tool
             if ( file.isDir( ) )
               {
                 // If it's a directory, then check if it is a Nutch segment, otherwise treat as a SequenceFile.
-                if ( p.getFileSystem( conf ).exists( new Path( file.getPath( ), "parse_data" ) ) )
+                if ( p.getFileSystem( conf ).exists( new Path( file.getPath(), "parse_data" ) ) )
                   {
-                    MultipleInputs.addInputPath( conf, new Path( p, "parse_data" ), SequenceFileInputFormat.class, NutchMapper.class );
-                    MultipleInputs.addInputPath( conf, new Path( p, "parse_text" ), SequenceFileInputFormat.class, NutchMapper.class );
+                    LOG.info( "Input NutchWax: " + file.getPath() );
+                    MultipleInputs.addInputPath( conf, new Path( file.getPath(), "parse_data" ), SequenceFileInputFormat.class, NutchMapper.class );
+                    MultipleInputs.addInputPath( conf, new Path( file.getPath(), "parse_text" ), SequenceFileInputFormat.class, NutchMapper.class );
                   }
                 else
                   {
                     // Assume it's a SequenceFile of DocumentWritables.
-                    MultipleInputs.addInputPath( conf, p, SequenceFileInputFormat.class, IdentityMapper.class );
+                    LOG.info( "Input Document: " + file.getPath() );
+                    MultipleInputs.addInputPath( conf, file.getPath(), SequenceFileInputFormat.class, IdentityMapper.class );
                   }
               }
             else 
               {
                 // Not a directory, assume it's a text file, either CDX or property specifications.
-                MultipleInputs.addInputPath( conf, new Path( args[i] ), TextInputFormat.class, TextMapper.class );
+                LOG.info( "Input TextFile: " + file.getPath() );
+                MultipleInputs.addInputPath( conf, file.getPath(), TextInputFormat.class, TextMapper.class );
               }
           }
       }
