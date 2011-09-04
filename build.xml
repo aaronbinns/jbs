@@ -34,7 +34,8 @@
            target="1.6"
            encoding="UTF-8"
            fork="true"
-           deprecation="false">
+           deprecation="false"
+           includeantruntime="false">
       <src path="${src.dir}/java" />
       <include name="**/*.java" />
       <classpath>
@@ -52,7 +53,7 @@
       <fileset dir="${build.dir}/classes" />
       <fileset dir="."
                includes="${lib.dir}/*.jar"
-               excludes="${lib.dir}/hadoop-*-core.jar" />
+               excludes="${lib.dir}/hadoop-*-core.jar,${lib.dir}/commons-logging-api-*.jar" />
       <fileset dir="." 
                includes="${lib.dir}/profiles/**" />
       <fileset file="${lib.dir}/effective_tld_names.dat" />
