@@ -26,6 +26,8 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
 import org.apache.hadoop.mapred.lib.MultipleInputs;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.apache.nutch.parse.ParseData;
 import org.apache.nutch.parse.ParseText;
@@ -61,6 +63,8 @@ import org.archive.jbs.util.*;
  */
 public class PageRanker extends Configured implements Tool
 {
+  public static final Log LOG = LogFactory.getLog(PageRanker.class);
+
   public static class Map extends MapReduceBase implements Mapper<Text, Writable, Text, GenericObject>
   {
     // For efficiency, create one instance of the output object '1'.
@@ -243,7 +247,7 @@ public class PageRanker extends Configured implements Tool
           else
             {
               // Hrmm...should only be one of the previous two.
-              System.out.println( "reduce: unknown value type: " + value );
+              LOG.warn( "reduce: unknown value type: " + value );
               continue ;
             }
         }
@@ -355,8 +359,8 @@ public class PageRanker extends Configured implements Tool
 
     conf.setOutputFormat(SequenceFileOutputFormat.class);
     
-    // Add the input paths as either NutchWAX segment directories or
-    // text .dup files.
+    // The input paths should be either NutchWAX segment directories
+    // or Hadoop SequenceFiles containing DocumentWritables.
     for ( int i = 1; i < args.length ; i++ )
       {
         Path p = new Path( args[i] );
@@ -369,18 +373,22 @@ public class PageRanker extends Configured implements Tool
             if ( file.isDir( ) )
               {
                 // If it's a directory, then check if it is a Nutch segment, otherwise treat as a SequenceFile.
-                if ( p.getFileSystem( conf ).exists( new Path( file.getPath( ), "parse_data" ) ) )
+                Path nwp = new Path( file.getPath( ), "parse_data" );
+                if ( p.getFileSystem( conf ).exists( nwp ) )
                   {
-                    MultipleInputs.addInputPath( conf, new Path( p, "parse_data" ), SequenceFileInputFormat.class, Map.class );
+                    LOG.info( "Adding input path: " + nwp );
+                    MultipleInputs.addInputPath( conf, nwp, SequenceFileInputFormat.class, Map.class );
                   }
                 else
                   {
-                    MultipleInputs.addInputPath( conf, p, SequenceFileInputFormat.class, Map.class );
+                    LOG.info( "Adding input path: " + file.getPath() );
+                    MultipleInputs.addInputPath( conf, file.getPath(), SequenceFileInputFormat.class, Map.class );
                   }
               }
             else 
               {
                 // Not a directory, skip it.
+                LOG.warn( "Not a directory, skip input: " + file.getPath( ) );
               }
           }
       }
