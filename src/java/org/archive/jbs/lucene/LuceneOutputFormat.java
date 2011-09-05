@@ -49,7 +49,7 @@ import org.archive.jbs.filter.*;
  *
  *  2. Closes that index and copies it into HDFS.
  */
-public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
+public class LuceneOutputFormat extends FileOutputFormat<Text, Text>
 {
   public FileSystem fs;
   public JobConf job;
@@ -58,10 +58,10 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
   
   public IndexWriter indexer;
 
-  public RecordWriter<Text, Document> getRecordWriter( final FileSystem fs,
-                                                       final JobConf job,
-                                                       final String name,
-                                                       final Progressable progress )
+  public RecordWriter<Text, Text> getRecordWriter( final FileSystem fs,
+                                                   final JobConf job,
+                                                   final String name,
+                                                   final Progressable progress )
     throws IOException
   {
     // Open Lucene index in ${temp}
@@ -88,7 +88,7 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
     return new LuceneRecordWriter( docWriter );
   }
 
-  public class LuceneRecordWriter implements RecordWriter<Text, Document>
+  public class LuceneRecordWriter implements RecordWriter<Text, Text>
   {
     LuceneDocumentWriter docWriter;
 
@@ -101,10 +101,10 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Document>
     /**
      * Delegate to docWriter.
      */
-    public void write( Text key, Document document )
+    public void write( Text key, Text value )
       throws IOException
     {
-      this.docWriter.add( key.toString(), document );
+      this.docWriter.add( key.toString(), new Document( value.toString() ) );
     }
 
     /**

@@ -40,12 +40,12 @@ import org.archive.jbs.*;
  * We perform essentially the same type normalization and filtering,
  * robot filtering, etc. before forming the Solr document.
  */
-public class SolrOutputFormat extends FileOutputFormat<Text, Document>
+public class SolrOutputFormat extends FileOutputFormat<Text, Text>
 {
-  public RecordWriter<Text, Document> getRecordWriter( final FileSystem fs,
-                                                          final JobConf job,
-                                                          final String name,
-                                                          final Progressable progress )
+  public RecordWriter<Text, Text> getRecordWriter( final FileSystem fs,
+                                                   final JobConf job,
+                                                   final String name,
+                                                   final Progressable progress )
     throws IOException
   {
     String serverUrl  = job.get( "jbs.solr.url", "http://localhost:8983/solr" );
@@ -91,7 +91,7 @@ public class SolrOutputFormat extends FileOutputFormat<Text, Document>
     return new SolrRecordWriter( solrDocWriter );
   }
   
-  public class SolrRecordWriter implements RecordWriter<Text, Document>
+  public class SolrRecordWriter implements RecordWriter<Text, Text>
   {
     SolrDocumentWriter docWriter;
     
@@ -100,10 +100,10 @@ public class SolrOutputFormat extends FileOutputFormat<Text, Document>
       this.docWriter = docWriter;
     }
 
-    public void write( Text key, Document document )
+    public void write( Text key, Text value )
       throws IOException
     {
-      this.docWriter.add( key.toString(), document );
+      this.docWriter.add( key.toString(), new Document( value.toString() ) );
     }
     
     public void close( Reporter reporter )
