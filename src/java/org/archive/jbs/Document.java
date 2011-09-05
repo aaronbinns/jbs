@@ -51,6 +51,7 @@ public class Document
    * Construct a document from a JSON string.
    */
   public Document( String json )
+    throws IOException
   {
     this();
 
@@ -388,6 +389,7 @@ public class Document
    *
    */
   private void fromJSON( String s )
+    throws IOException
   {
     try
       {
@@ -430,7 +432,7 @@ public class Document
       }
     catch ( JSONException jse )
       {
-        throw new RuntimeException( jse );
+        throw new IOException( jse );
       }
   }
   
