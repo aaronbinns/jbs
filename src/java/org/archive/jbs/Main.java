@@ -58,11 +58,12 @@ public class Main extends Configured implements Tool
   /**
    * Mapper that handles text files of various formats, primarily CDX and "revisit" files.
    */
-  public static class TextMapper extends MapReduceBase implements Mapper<LongWritable,Text,Text,DocumentWritable>
+  public static class TextMapper extends MapReduceBase implements Mapper<LongWritable, Text, Text, Text>
   {
-    private Text newKey = new Text( );
+    private Text outputKey   = new Text( );
+    private Text outputValue = new Text( );
     
-    public void map( LongWritable key, Text value, OutputCollector<Text,DocumentWritable> output, Reporter reporter )
+    public void map( LongWritable key, Text value, OutputCollector<Text,Text> output, Reporter reporter )
       throws IOException
     {
       try
@@ -71,28 +72,16 @@ public class Main extends Configured implements Tool
 
           switch ( line.length )
             {
-              // Handle lines from text files with property values
-            case 3:
-              newKey.set( line[0] + " " + line[1] );
-              
-              String[] property = line[2].split( "=" );
-              if ( property.length == 2 )
-                {
-                  DocumentWritable doc = new DocumentWritable( );
-                  doc.set( property[0], property[1] );
-
-                  output.collect( newKey, doc );
-                }
-              break ;
-
               // Handle lines from "cdx" files.
             case  9:
-              newKey.set( line[0] + " sha1:" + line[5] );
+              outputKey.set( line[0] + " sha1:" + line[5] );
 
-              DocumentWritable doc = new DocumentWritable( );
+              Document doc = new Document( );
               doc.set( "date", line[1] );
               
-              output.collect( newKey, doc );
+              outputValue.set( doc.toString() );
+
+              output.collect( outputKey, outputValue );
               break ;
 
             default:
@@ -110,12 +99,14 @@ public class Main extends Configured implements Tool
   /**
    * Mapper that can handle Writables from Nutch(WAX) segments.
    */
-  public static class NutchMapper extends MapReduceBase implements Mapper<Text, Writable, Text, DocumentWritable>
+  public static class NutchMapper extends MapReduceBase implements Mapper<Text, Writable, Text, Text>
   {
-    public void map( Text key, Writable value, OutputCollector<Text, DocumentWritable> output, Reporter reporter)
+    private Text outputValue = new Text();
+
+    public void map( Text key, Writable value, OutputCollector<Text, Text> output, Reporter reporter)
       throws IOException
     {
-      DocumentWritable doc = new DocumentWritable( );
+      Document doc = new Document( );
 
       if ( value instanceof ParseData )
         {
@@ -144,25 +135,33 @@ public class Main extends Configured implements Tool
           System.out.println( "NutchMapper unknown value type: " + value.getClass( ) );
           return ;
         }
+      outputValue.set( doc.toString() );
 
-      output.collect( key, doc );
+      output.collect( key, outputValue );
     }
   }
   
-  public static class Reduce extends MapReduceBase implements Reducer<Text, DocumentWritable, Text, DocumentWritable> 
+  public static class Reduce extends MapReduceBase implements Reducer<Text, Text, Text, Text> 
   {
-    public void reduce( Text key, Iterator<DocumentWritable> values, OutputCollector<Text, DocumentWritable> output, Reporter reporter)
+    private Text outputValue = new Text();
+
+    public void reduce( Text key, Iterator<Text> values, OutputCollector<Text, Text> output, Reporter reporter)
       throws IOException
     {
-      DocumentWritable doc = new DocumentWritable( );
+      // If no values, then skip it.
+      if ( ! values.hasNext( ) ) return ;
+      
+      // Create a Document of the first JSON value.
+      Document doc = new Document( values.next().toString() );
 
       while ( values.hasNext( ) )
         {
-          DocumentWritable value = values.next();
-          doc.merge( value );
+          doc.merge( new Document( values.next().toString() ) );
         }
-
-      output.collect( key, doc );
+      
+      outputValue.set( doc.toString() );
+      
+      output.collect( key, outputValue );
     }
   }
   
@@ -184,7 +183,7 @@ public class Main extends Configured implements Tool
     JobConf conf = new JobConf( getConf(), Main.class);
     
     conf.setOutputKeyClass(Text.class);
-    conf.setOutputValueClass(DocumentWritable.class);
+    conf.setOutputValueClass(Text.class);
     
     conf.setCombinerClass(Reduce.class);
     conf.setReducerClass(Reduce.class);
@@ -227,7 +226,7 @@ public class Main extends Configured implements Tool
                   }
                 else
                   {
-                    // Assume it's a SequenceFile of DocumentWritables.
+                    // Assume it's a SequenceFile of JSON-encoded Documents.
                     LOG.info( "Input Document: " + file.getPath() );
                     MultipleInputs.addInputPath( conf, file.getPath(), SequenceFileInputFormat.class, IdentityMapper.class );
                   }

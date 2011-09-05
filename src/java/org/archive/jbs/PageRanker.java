@@ -56,7 +56,7 @@ import org.archive.jbs.util.*;
  * </p>
  * <p>
  *   The output is a Hadoop SequenceFile with a Text key and a
- *   DocumentWritable as the value.  The DocumentWritable has a
+ *   JSON-encoded Document as the value.  The Document has a
  *   property of "numInlinks" with corresponding value.
  * </p>
  */
@@ -121,9 +121,9 @@ public class PageRanker extends Configured implements Tool
         {
           uniqueOutlinks = getOutlinks( (ParseData) value );
         }
-      else if ( value instanceof DocumentWritable )
+      else if ( value instanceof Text )
         {
-          uniqueOutlinks = getOutlinks( (DocumentWritable) value );
+          uniqueOutlinks = getOutlinks( new Document( ((Text) value).toString() ) );
         }
       else 
         {
@@ -196,13 +196,13 @@ public class PageRanker extends Configured implements Tool
     }
 
     /**
-     * Utility to return a set of the unique outlinks in a JBs DocumentWritable
+     * Utility to return a set of the unique outlinks in a JBs Document
      */
-    public Set<String> getOutlinks( DocumentWritable document )
+    public Set<String> getOutlinks( Document document )
     {
       Set<String> uniqueOutlinks = new HashSet<String>( 16 );
       
-      for ( DocumentWritable.Link link : document.getLinks( ) )
+      for ( Document.Link link : document.getLinks( ) )
         {
           uniqueOutlinks.add( link.getUrl( ) );
         }
@@ -211,16 +211,16 @@ public class PageRanker extends Configured implements Tool
     }
   }
   
-  public static class Reduce extends MapReduceBase implements Reducer<Text, GenericObject, Text, DocumentWritable> 
+  public static class Reduce extends MapReduceBase implements Reducer<Text, GenericObject, Text, Text> 
   {
     // For efficiency, only create one instance of the outputKey and outputValue
-    private Text             outputKey   = new Text();
-    private DocumentWritable outputValue = new DocumentWritable();
+    private Text outputKey   = new Text();
+    private Text outputValue = new Text();
 
     /**
      * 
      */
-    public void reduce( Text key, Iterator<GenericObject> values, OutputCollector<Text, DocumentWritable> output, Reporter reporter)
+    public void reduce( Text key, Iterator<GenericObject> values, OutputCollector<Text, Text> output, Reporter reporter)
       throws IOException
     {
       long sum = 0;
@@ -264,7 +264,8 @@ public class PageRanker extends Configured implements Tool
       // If no inlinks, do not bother emitting an output value.
       if ( sum == 0 ) return ;
 
-      outputValue.set( "numInlinks", Long.toString(sum) );
+      // Hand code a trivial JSON string to hold the property.
+      outputValue.set( "{\"numInlinks\":\"" + Long.toString(sum) + "\"}" );
 
       for ( String digest : digests )
         {
@@ -354,12 +355,12 @@ public class PageRanker extends Configured implements Tool
     conf.setMapOutputValueClass(GenericObject.class);
 
     conf.setOutputKeyClass(Text.class);
-    conf.setOutputValueClass(DocumentWritable.class);
+    conf.setOutputValueClass(Text.class);
 
     conf.setOutputFormat(SequenceFileOutputFormat.class);
     
     // The input paths should be either NutchWAX segment directories
-    // or Hadoop SequenceFiles containing DocumentWritables.
+    // or Hadoop SequenceFiles containing JSON-encoded Documents
     for ( int i = 1; i < args.length ; i++ )
       {
         Path p = new Path( args[i] );
