@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package org.archive.jbs.misc;
+package org.archive.jbs;
 
 import java.io.*;
 import java.net.*;
@@ -34,7 +34,6 @@ import org.apache.nutch.parse.ParseText;
 import org.apache.nutch.parse.Outlink;
 import org.apache.nutch.metadata.Metadata;
 
-import org.archive.jbs.DocumentWritable;
 import org.archive.jbs.util.*;
 
 /**
