@@ -113,6 +113,13 @@ public class Document
   {
     if ( value != null ) value = value.trim();
 
+    if ( value == null || value.length() == 0 )
+      {
+        properties.remove( key );
+
+        return ;
+      }
+
     properties.put( key, value );
   }
 
@@ -125,7 +132,7 @@ public class Document
   {
     if ( c == null || c.size() == 0 )
       {
-        properties.put( key, null );
+        properties.remove( key );
         return ;
       }
 
@@ -134,7 +141,12 @@ public class Document
       {
         if ( newValue != null )
           {
-            newValues.add( newValue.trim( ) );
+            newValue = newValue.trim();
+            
+            if ( newValue.length() > 0 )
+              {
+                newValues.add( newValue );
+              }
           }
       }
 
@@ -143,7 +155,7 @@ public class Document
     // the property.
     if ( newValues.size( ) == 0 )
       {
-        properties.put( key, null );
+        properties.remove( key );
       }
 
     if ( newValues.size( ) == 1 )
@@ -168,6 +180,8 @@ public class Document
     else
       {
         newValue = newValue.trim();
+        
+        if ( newValue.length() == 0 ) return;
       }
 
     Object value = properties.get( key );
@@ -220,12 +234,16 @@ public class Document
         if ( newValue != null )
           {
             newValue = newValue.trim();
-            newValues.add( newValue );
+
+            if ( newValue.length() > 0 )
+              {
+                newValues.add( newValue );
+              }
           }
       }
 
-    // If after uniquing the new values and removing any 'null', the
-    // set is empty, then there's nothing to add.
+    // If after uniquing the new values and removing any 'null' and ""
+    // values, if the set is empty, then there's nothing to add.
     if ( newValues.size( ) == 0 )
       {
         return;
@@ -269,14 +287,11 @@ public class Document
    */
   public void addLink( String url, String text )
   {
-    if ( text != null )
-      {
-        text = text.trim();
-      }
-    else
-      {
-        text = "";
-      }
+    if ( url  == null ) url  = "";
+    if ( text == null ) text = "";
+
+    url  = url.trim();
+    text = text.trim();
 
     this.links.add( new Link( url, text ) );
   }
@@ -341,6 +356,9 @@ public class Document
                 
                 for ( String s : values )
                   {
+                    // Even though the set() and add() methods should
+                    // enforce that no value is "", we leave this
+                    // check here as a belt-and-suspenders thing.
                     if ( s.length() != 0 )
                       {
                         json.accumulate( key, s );
@@ -351,6 +369,9 @@ public class Document
               {
                 String s = (String) value;
 
+                // Even though the set() and add() methods should
+                // enforce that no value is "", we leave this
+                // check here as a belt-and-suspenders thing.
                 if ( s.length() != 0 )
                   {
                     json.accumulate( key, (String) value );
@@ -369,6 +390,9 @@ public class Document
             jlink.put( "url" , url );
 
             String text = link.getText();
+
+            // The link text is frequently "", we just don't bother
+            // serializing it out, to save space.
             if ( text.length() != 0 )
               {
                 jlink.put( "text", text );
@@ -425,7 +449,8 @@ public class Document
                 if ( ! (l instanceof JSONObject) ) continue;
 
                 JSONObject jlink = (JSONObject) l;
-
+                
+                // Use optString() to get "" rather than 'null' if there is no value.
                 this.addLink( jlink.optString( "url" ), jlink.optString( "text" ) );
               }
           }
@@ -444,17 +469,14 @@ public class Document
     private String url;
     private String text;
 
-    public Link( String url, String text )
+    private Link( String url, String text )
     {
       this.url  = url;
-      this.text = text == null ? "" : text.trim() ;
+      this.text = text;
     }
 
     public String getUrl( ) { return url; }
-    public void setUrl( String url ) { this.url = url.trim(); }
-
     public String getText( ) { return text; }
-    public void setText( String text ) { this.text = text == null ? "" : text.trim(); }
   }
 
 }
