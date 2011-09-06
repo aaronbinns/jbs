@@ -56,7 +56,8 @@ public class Main extends Configured implements Tool
   public static final Log LOG = LogFactory.getLog(Main.class);
 
   /**
-   * Mapper that handles text files of various formats, primarily CDX and "revisit" files.
+   * Mapper that handles text files, where each line is mapped to a
+   * Document.  The accepted formats are JSON and CDX.
    */
   public static class TextMapper extends MapReduceBase implements Mapper<LongWritable, Text, Text, Text>
   {
@@ -84,6 +85,12 @@ public class Main extends Configured implements Tool
         }
     }
 
+    /**
+     * Deserialize a Document from JSON.  The Document's key is taken
+     * from the <tt>_key</tt> property, if it exists, otherwise the
+     * key is synthesized from the <tt>url</tt> and <tt>digest</tt>
+     * properties.
+     */
     private void mapJSON( String line, OutputCollector<Text,Text> output, Reporter reporter )
       throws IOException
     {
@@ -119,6 +126,9 @@ public class Main extends Configured implements Tool
       output.collect( outputKey, outputValue );
     }
 
+    /**
+     * Synthesize a Document from a CDX line.
+     */
     private void mapCDX( String line, OutputCollector<Text,Text> output, Reporter reporter )
       throws IOException
     {
@@ -191,6 +201,10 @@ public class Main extends Configured implements Tool
     }
   }
   
+  /**
+   * The reduce operation simply merges together all the Documents
+   * with the same key, then writes them out.
+   */
   public static class Reduce extends MapReduceBase implements Reducer<Text, Text, Text, Text> 
   {
     private Text outputValue = new Text();
