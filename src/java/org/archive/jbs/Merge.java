@@ -196,6 +196,23 @@ public class Merge extends Configured implements Tool
   }
   
   /**
+   * Mapper of Document to Document, with optional transformation(s)
+   * in between.  Without any transformations, it's the same as
+   * IdentityMapper.
+   */
+  public static class DocumentMapper extends MapReduceBase implements Mapper<Text, Text, Text, Text>
+  {
+    private Text outputValue = new Text();
+
+    public void map( Text key, Text value, OutputCollector<Text, Text> output, Reporter reporter)
+      throws IOException
+    {
+      // TODO: Implement document optional transformer(s).
+      output.collect( key, value );
+    }
+  }
+  
+  /**
    * The reduce operation simply merges together all the Documents
    * with the same key, then writes them out.
    */
@@ -286,7 +303,7 @@ public class Merge extends Configured implements Tool
                   {
                     // Assume it's a SequenceFile of JSON-encoded Documents.
                     LOG.info( "Input Document: " + file.getPath() );
-                    MultipleInputs.addInputPath( conf, file.getPath(), SequenceFileInputFormat.class, IdentityMapper.class );
+                    MultipleInputs.addInputPath( conf, file.getPath(), SequenceFileInputFormat.class, DocumentMapper.class );
                   }
               }
             else 
@@ -300,9 +317,9 @@ public class Merge extends Configured implements Tool
 
     FileOutputFormat.setOutputPath(conf, new Path(args[0]));
     
-    JobClient.runJob(conf);
+    RunningJob rj = JobClient.runJob( conf );
     
-    return 0;
+    return rj.isSuccessful( ) ? 0 : 1;
   }
 
 }
