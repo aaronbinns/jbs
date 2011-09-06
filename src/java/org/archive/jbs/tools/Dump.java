@@ -28,19 +28,19 @@ import org.apache.hadoop.util.*;
  * Command-line utility to dump the contents of a Hadoop MapFile or
  * SequenceFile.
  */
-public class Dumper extends Configured implements Tool
+public class Dump extends Configured implements Tool
 {
 
   public static void main(String[] args) throws Exception
   {
-    int result = ToolRunner.run( new JobConf(Dumper.class), new Dumper(), args );
+    int result = ToolRunner.run( new JobConf(Dump.class), new Dump(), args );
 
     System.exit( result );
   }
 
   public int run( String[] args ) throws Exception
   {
-    String usage = "Usage: LinkDumper <mapfile|sequencefile>";
+    String usage = "Usage: Dump <mapfile|sequencefile>";
       
     if (args.length != 1)
       {

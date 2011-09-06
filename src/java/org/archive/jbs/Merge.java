@@ -51,9 +51,9 @@ import org.apache.nutch.metadata.Metadata;
  * gained the ability to simply store the merge/deduped set of
  * Documents in a Hadoop file, the name needed changed.
  */
-public class Main extends Configured implements Tool
+public class Merge extends Configured implements Tool
 {
-  public static final Log LOG = LogFactory.getLog(Main.class);
+  public static final Log LOG = LogFactory.getLog(Merge.class);
 
   /**
    * Mapper that handles text files, where each line is mapped to a
@@ -231,7 +231,7 @@ public class Main extends Configured implements Tool
   
   public static void main(String[] args) throws Exception
   {
-    int result = ToolRunner.run( new JobConf(Main.class), new Main(), args );
+    int result = ToolRunner.run( new JobConf(Merge.class), new Merge(), args );
 
     System.exit( result );
   }
@@ -240,11 +240,11 @@ public class Main extends Configured implements Tool
   {
     if ( args.length < 2 )
       {
-        System.err.println( "jbs.Main <output> <input>..." );
+        System.err.println( "jbs.Merge <output> <input>..." );
         return 1;
       }
       
-    JobConf conf = new JobConf( getConf(), Main.class);
+    JobConf conf = new JobConf( getConf(), Merge.class);
     
     conf.setOutputKeyClass(Text.class);
     conf.setOutputValueClass(Text.class);
@@ -266,7 +266,7 @@ public class Main extends Configured implements Tool
     
     // Set the Hadoop job name to incorporate the output format name.
     String formatName = conf.getOutputFormat().getClass().getName();
-    conf.setJobName( "jbs.Main " + formatName.substring( formatName.lastIndexOf('.') != -1 ? (formatName.lastIndexOf('.') + 1) : 0 ) );
+    conf.setJobName( "jbs.Merge " + formatName.substring( formatName.lastIndexOf('.') != -1 ? (formatName.lastIndexOf('.') + 1) : 0 ) );
 
     // Add the input paths as either NutchWAX segment directories or
     // text .dup files.

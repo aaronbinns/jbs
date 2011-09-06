@@ -60,9 +60,9 @@ import org.archive.jbs.util.*;
  *   property of "numInlinks" with corresponding value.
  * </p>
  */
-public class PageRanker extends Configured implements Tool
+public class PageRank extends Configured implements Tool
 {
-  public static final Log LOG = LogFactory.getLog(PageRanker.class);
+  public static final Log LOG = LogFactory.getLog(PageRank.class);
 
   public static class Map extends MapReduceBase implements Mapper<Text, Writable, Text, GenericObject>
   {
@@ -306,7 +306,7 @@ public class PageRanker extends Configured implements Tool
 
     if ( job.getBoolean( "jbs.idnHelper.useDefaults", true ) )
       {
-        InputStream is = PageRanker.class.getClassLoader( ).getResourceAsStream( "effective_tld_names.dat" );
+        InputStream is = PageRank.class.getClassLoader( ).getResourceAsStream( "effective_tld_names.dat" );
         
         if ( is == null )
           {
@@ -330,7 +330,7 @@ public class PageRanker extends Configured implements Tool
 
   public static void main(String[] args) throws Exception
   {
-    int result = ToolRunner.run( new JobConf(PageRanker.class), new PageRanker(), args );
+    int result = ToolRunner.run( new JobConf(PageRank.class), new PageRank(), args );
 
     System.exit( result );
   }
@@ -339,12 +339,12 @@ public class PageRanker extends Configured implements Tool
   {
     if (args.length < 2)
       {
-        System.err.println( "PageRanker <output> <input>..." );
+        System.err.println( "PageRank <output> <input>..." );
         return 1;
       }
       
-    JobConf conf = new JobConf( getConf(), PageRanker.class);
-    conf.setJobName("jbs.misc.PageRanker");
+    JobConf conf = new JobConf( getConf(), PageRank.class);
+    conf.setJobName("jbs.misc.PageRank");
     
     // No need to set this since we use the MultipleInputs class
     // below, which allows us to specify a mapper for each input.
