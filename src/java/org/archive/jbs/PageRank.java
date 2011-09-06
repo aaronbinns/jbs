@@ -395,9 +395,9 @@ public class PageRank extends Configured implements Tool
 
     FileOutputFormat.setOutputPath(conf, new Path(args[0]));
 
-    JobClient.runJob(conf);
+    RunningJob rj = JobClient.runJob( conf );
     
-    return 0;
+    return rj.isSuccessful( ) ? 0 : 1;
   }
 
 }
