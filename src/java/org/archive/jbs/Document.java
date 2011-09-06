@@ -437,35 +437,8 @@ public class Document
   }
   
   /**
-   * Hadoop  serialization
-  public void readFields( DataInput in )
-    throws IOException
-  {
-    properties.clear();
-    links.clear();
-
-    int num = in.readInt();
-    for ( int i = 0 ; i < num ; i++ )
-      {
-        String key = Text.readString( in );
-
-        int numVals = in.readInt( );
-        for ( int j = 0 ; j < numVals ; j++ )
-          {
-            String value = Text.readString( in );
-            add( key, value );
-          }
-      }
-
-    num = in.readInt();
-    links.ensureCapacity( num );
-    for ( int i = 0 ; i < num ; i++ )
-      {
-        links.add( new Link( Text.readString( in ) , Text.readString( in ) ) );
-      }
-  }
+   * A link is a URL and the link text, a.k.a. "anchor text".
    */
-
   public static class Link
   {
     private String url;
