@@ -29,8 +29,12 @@ import org.json.JSONException;
  *
  * Properties are simple key/value pairs, where values can be single
  * or multi-valued.  Multiple values are kept in a set, so only unique
- * values are retained.  Setting a property to 'null' or a collection
- * containing a single 'null' element sets the property to 'null.
+ * values are retained.  Setting a property to 'null', "", an empty
+ * collection or a collection containing only 'null'/"" will 
+ * remove the property from the Document.
+ *
+ * Getting property values always returns "" or an empty collection if
+ * the property does not exist.
  */
 public class Document
 {
