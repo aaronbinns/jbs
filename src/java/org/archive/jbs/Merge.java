@@ -34,22 +34,16 @@ import org.apache.nutch.parse.Outlink;
 import org.apache.nutch.metadata.Metadata;
 
 /** 
- * Command-line driver and MapReduce code for processing full-text
- * documents, currently originating from a NutchWAX import action.
- *
- * This class can be used to merge multiple NutchWAX segments, along
- * with CDX info to produce a single merged/deduped collection of
- * Document objects.
+ * Command-line driver and MapReduce code for converting and merging
+ * Documents.  Documents can be converted/synthesized from text-files
+ * containing either JSON-encoded Documents or CDX files.  Documents
+ * can also be converted from NutchWAX format.
  *
  * This class can take that merged/deduped collection of Documents
  * and write them to various destinations:
  *   Hadoop file  -- stores the merge/deduped set in a Hadoop file
  *   Lucene index -- builds a full-text Lucene index of the Docs
  *   Solr index   -- pushes the Documents to a Solr server.
- *
- * NOTE: Previously, this class was called 'Indexer', but once it
- * gained the ability to simply store the merge/deduped set of
- * Documents in a Hadoop file, the name needed changed.
  */
 public class Merge extends Configured implements Tool
 {
