@@ -66,34 +66,84 @@ public class Main extends Configured implements Tool
     public void map( LongWritable key, Text value, OutputCollector<Text,Text> output, Reporter reporter )
       throws IOException
     {
-      try
+      String line = value.toString().trim();
+      
+      if ( line.length() == 0 ) return ;
+      
+      switch ( line.charAt(0) )
         {
-          String[] line = value.toString().trim().split("\\s+");
-
-          switch ( line.length )
-            {
-              // Handle lines from "cdx" files.
-            case  9:
-              outputKey.set( line[0] + " sha1:" + line[5] );
-
-              Document doc = new Document( );
-              doc.set( "date", line[1] );
-              
-              outputValue.set( doc.toString() );
-
-              output.collect( outputKey, outputValue );
-              break ;
-
-            default:
-              // Skip it
-              return ;
-            }
-        }
-      catch ( Exception e )
-        {
-          // Eat it.
+        case '{':
+          mapJSON( line, output, reporter );
+          break;
+        case '#':
+          // Comment, skip it.
+          break;
+        default:
+          mapCDX( line, output, reporter );
+          break;
         }
     }
+
+    private void mapJSON( String line, OutputCollector<Text,Text> output, Reporter reporter )
+      throws IOException
+    {
+      Document doc;
+      try
+        {
+          doc = new Document( line );
+        }
+      catch ( IOException ioe )
+        {
+          LOG.warn( "Malformed JSON line: " + line );
+          return ;
+        }
+      
+      String key = doc.get( "_key" );
+      if ( key.length() == 0 )
+        {
+          String url    = doc.get( "url"    );
+          String digest = doc.get( "digest" );
+          
+          if ( (url.length() != 0) && (digest.length() != 0) )
+            {
+              key = url + " " + digest;
+            }
+          else
+            {
+              LOG.warn( "Missing url or digest, skipping: " + line );
+            }
+        }
+      
+      outputKey  .set( key );
+      outputValue.set( doc.toString() );
+      output.collect( outputKey, outputValue );
+    }
+
+    private void mapCDX( String line, OutputCollector<Text,Text> output, Reporter reporter )
+      throws IOException
+    {
+      String[] fields = line.split( "\\s+" );
+
+      if ( fields.length != 9 )
+        {
+          LOG.warn( "Malformed CDX line, numFields=" + fields.length + " : " + line );
+          return ;
+        }
+
+      // Skip DNS records.
+      if ( fields[0].startsWith("dns:") ) return ;
+
+      Document doc = new Document( );
+      doc.set( "url" ,   fields[0] );
+      doc.set( "date",   fields[1] );
+      doc.set( "digest", "sha1:" + fields[5] );
+      
+      outputKey  .set( fields[0] + " sha1:" + fields[5] );
+      outputValue.set( doc.toString() );
+      
+      output.collect( outputKey, outputValue );
+    }
+
   }
 
   /**
