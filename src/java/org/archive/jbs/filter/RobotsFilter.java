@@ -35,7 +35,12 @@ public class RobotsFilter implements DocumentFilter
       {
         URI uri = new URI( url );
         
-        String path = uri.getPath().trim( );
+        String path = uri.getPath();
+
+        // If no path, then trivially *not* robots nor favicon.
+        if ( path == null ) return true;
+
+        path = path.trim();
 
         if ( "/favicon.ico".equals( path ) ||
              "/robots.txt" .equals( path ) )
