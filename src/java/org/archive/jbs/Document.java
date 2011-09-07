@@ -38,8 +38,8 @@ import org.json.JSONException;
  */
 public class Document
 {
-  public Map<String,Object> properties;
-  public ArrayList<Link>    links;
+  private Map<String,Object> properties;
+  private ArrayList<Link>    links;
 
   /**
    * Construct and empty document.
@@ -305,7 +305,15 @@ public class Document
    */
   public List<Link> getLinks( )
   {
-    return Collections.unmodifiableList( links );
+    return (List<Link>) this.links.clone( );
+  }
+
+  /**
+   * Remove all the links.
+   */
+  public void clearLinks( )
+  {
+    this.links.clear( );
   }
 
   /**
