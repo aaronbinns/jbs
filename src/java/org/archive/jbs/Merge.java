@@ -202,13 +202,29 @@ public class Merge extends Configured implements Tool
    */
   public static class DocumentMapper extends MapReduceBase implements Mapper<Text, Text, Text, Text>
   {
+    private JobConf conf;
+    
     private Text outputValue = new Text();
+
+    public void configure( JobConf conf )
+    {
+      this.conf = conf;
+    }
 
     public void map( Text key, Text value, OutputCollector<Text, Text> output, Reporter reporter)
       throws IOException
     {
       // TODO: Implement document optional transformer(s).
-      output.collect( key, value );
+      Document d = new Document( value.toString() );
+
+      if ( conf.getBoolean( "jbs.documentMapper.dropLinks", false ) )
+        {
+          d.clearLinks();
+        }
+
+      outputValue.set( d.toString() );
+
+      output.collect( key, outputValue );
     }
   }
   
