@@ -344,7 +344,7 @@ public class PageRank extends Configured implements Tool
       }
       
     JobConf conf = new JobConf( getConf(), PageRank.class);
-    conf.setJobName("jbs.misc.PageRank");
+    conf.setJobName("jbs.PageRank");
     
     // No need to set this since we use the MultipleInputs class
     // below, which allows us to specify a mapper for each input.
