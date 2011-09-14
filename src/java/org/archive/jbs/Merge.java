@@ -253,6 +253,11 @@ public class Merge extends Configured implements Tool
       outputValue.set( doc.toString() );
       
       output.collect( key, outputValue );
+      
+      // Clear the outputValue so the String can be GC'd.  If we don't
+      // clear it, the reference to the string will remain after this
+      // method returns because the outputValue is a class member.
+      outputValue.clear();
     }
   }
   
