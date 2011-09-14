@@ -76,9 +76,9 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Text>
                                new KeywordAnalyzer( ),
                                IndexWriter.MaxFieldLength.UNLIMITED );
     
-    indexer.setMergeFactor      ( job.getInt("jbs.lucene.mergeFactor", 10) );
+    indexer.setMergeFactor      ( job.getInt("jbs.lucene.mergeFactor", 100) );
     indexer.setMaxMergeDocs     ( job.getInt("jbs.lucene.maxMergeDocs", Integer.MAX_VALUE) );
-    indexer.setRAMBufferSizeMB  ( job.getInt("jbs.lucene.maxRAMBufferSize", 1024) );
+    indexer.setRAMBufferSizeMB  ( job.getInt("jbs.lucene.maxRAMBufferSize", 512) );
     indexer.setTermIndexInterval( job.getInt("jbs.lucene.termIndexInterval", 1) );
     indexer.setMaxFieldLength   ( job.getInt("jbs.lucene.max.tokens", Integer.MAX_VALUE) );
     indexer.setUseCompoundFile  ( false );
