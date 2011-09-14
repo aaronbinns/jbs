@@ -5,8 +5,31 @@
   with Lucene.
  -->
 <configuration>
+
+  <!-- This outputformat class writes the merged documents to a Lucene
+       index. -->
   <property>
     <name>jbs.outputformat.class</name>
     <value>org.archive.jbs.lucene.LuceneOutputFormat</value>
   </property>
+
+  <!-- In MB, the size of the in-memory document buffer.  The bigger
+       the better for offline indexing. -->
+  <property>
+    <name>jbs.lucene.maxRAMBufferSize</name>
+    <value>1024</value>
+  </property>
+
+  <!-- How many segments to merge together at a time.  With a large
+       RAM buffer size, a value of 10 here should be sufficient.  If
+       it's set very high, like 1000 then you could wind up wth 1000
+       segments on disk, which could mean 1000*10 => 10,000 open
+       files.  That many open files could cause a problem if your
+       environment isn't configured to allow for that many.       
+  -->
+  <property>
+    <name>jbs.lucene.mergeFactor</name>
+    <value>10</value>
+  </property>
+
 </configuration>
