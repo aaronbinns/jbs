@@ -51,7 +51,7 @@ public class Dump extends Configured implements Tool
     String in = args[0];
 
     Configuration conf = new Configuration();
-    FileSystem fs = FileSystem.getLocal(conf);
+    FileSystem fs = FileSystem.get(conf);
 
     MapFile     .Reader mapReader = null;
     SequenceFile.Reader seqReader = null;
