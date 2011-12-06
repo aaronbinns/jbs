@@ -95,7 +95,7 @@ public class Merge extends Configured implements Tool
         }
       catch ( IOException ioe )
         {
-          LOG.warn( "Malformed JSON line: " + line );
+          LOG.warn( "Malformed JSON line: " + line, ioe );
           return ;
         }
       
