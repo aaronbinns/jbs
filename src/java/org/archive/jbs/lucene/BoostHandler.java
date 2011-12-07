@@ -26,22 +26,19 @@ import org.apache.lucene.index.*;
 import org.archive.jbs.Document;
 
 /**
- * Handler that computes a boost value based on any number of values
- * in the input Document, then applies that boost value to the Lucene
- * doc.  The boost value is also stored in the Lucene doc for future
- * reference, such as auditing/debugging/tracking.
+ * Handler that applies a boost value to the Lucene doc.  The boost
+ * value is also stored in the Lucene doc for future reference, such
+ * as auditing/debugging/tracking.
  */
 public class BoostHandler implements FieldHandler
 {
 
   public void handle( org.apache.lucene.document.Document luceneDocument, Document document )
   {
-    long numInlinks = getLong( document, "numInlinks", 0 );
+    float boost = getFloat( document, "boost", 1.0F );
 
-    if ( numInlinks > 10 )
+    if ( boost != 1.0 )
       {
-        float boost = (float) Math.log10( numInlinks );
-        
         // Store the boost value with the document.  This can be handy
         // for debugging/auditing, but it is not searched on, nor does
         // it actually have any operational effect.  It's just so that
@@ -53,12 +50,12 @@ public class BoostHandler implements FieldHandler
       }
   }
 
-  public long getLong( Document document, String key, long defaultValue )
+  public float getFloat( Document document, String key, float defaultValue )
   {
-    long value = defaultValue;
+    float value = defaultValue;
     try
       {
-        value = Long.parseLong( document.get( key ) );
+        value = Float.parseFloat( document.get( key ) );
       }
     catch ( NumberFormatException nfe )
       {
