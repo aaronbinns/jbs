@@ -153,7 +153,8 @@ public class SolrDocumentWriter extends DocumentWriterBase
     // Special handling for type
     String type = this.typeNormalizer.normalize( document );
     
-    doc.addField( "type", type );
+    // OSC: Rename "type" to "media_type"
+    doc.addField( "media_type", type );
 
     // Finally, add the document.
     try
