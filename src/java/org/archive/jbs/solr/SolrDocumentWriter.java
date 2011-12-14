@@ -76,7 +76,7 @@ public class SolrDocumentWriter extends DocumentWriterBase
     doc.addField( "id",  FPGenerator.std64.fp(key) );
     
     // General properties.
-    for ( String p : new String[] { "url", "digest", "title", "length", "boiled" } )
+    for ( String p : new String[] { "url", "digest", "title" } )
       {
         String value = document.get( p );
 
@@ -98,6 +98,14 @@ public class SolrDocumentWriter extends DocumentWriterBase
     // Document body, i.e the "content"
     doc.addField( "content", document.get( "content_parsed" ) );
 
+    // OSC: They mapped this to "boiled_content" so we'll do the same.
+    doc.addField( "boiled_content", document.get( "boiled" ) );
+
+    // OSC: They renamed to "byte_length" because "length" causes
+    //      JavaScript name collisions in the Solr admin webpages.
+    doc.addField( "byte_length", document.get("length"));
+
+
     // Solr requires the date to be in the form: 1995-12-31T23:59:59Z
     // See the Solr schema docs.
     HashSet<String> dates = new HashSet<String>( Arrays.asList( document.get("date").split( "\\s+" ) ) );
@@ -105,8 +113,10 @@ public class SolrDocumentWriter extends DocumentWriterBase
       {
         if ( date.length() == "yyyymmddhhmmss".length() )
           {
-            doc.addField( "date", date.substring(0,4)  + "-" + date.substring(4,6)   + "-" + date.substring(6,8)   + "T" + 
-                                  date.substring(8,10) + ":" + date.substring(10,12) + ":" + date.substring(12,14) + "Z" );
+            // OSC: Add separate capture date and time fields.
+            doc.addField( "capture_datetime", date.substring(0,4)  + "-" + date.substring(4,6)   + "-" + date.substring(6,8)   + "T" + 
+                                              date.substring(8,10) + ":" + date.substring(10,12) + ":" + date.substring(12,14) + "Z" );
+            doc.addField( "capture_date",     date.substring(0,4)  + "-" + date.substring(4,6)   + "-" + date.substring(6,8)   + "T" + "00:00:00Z" );
           }
       }
 
