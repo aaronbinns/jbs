@@ -203,27 +203,37 @@ public class Merge extends Configured implements Tool
   public static class DocumentMapper extends MapReduceBase implements Mapper<Text, Text, Text, Text>
   {
     private JobConf conf;
-    
+    private boolean dropLinks;
+
     private Text outputValue = new Text();
 
     public void configure( JobConf conf )
     {
       this.conf = conf;
+      this.dropLinks = conf.getBoolean( "jbs.documentMapper.dropLinks", false );
     }
 
+    /**
+     * TODO: Implement document optional transformer(s).
+     */
     public void map( Text key, Text value, OutputCollector<Text, Text> output, Reporter reporter)
       throws IOException
     {
-      // TODO: Implement document optional transformer(s).
-      Document d = new Document( value.toString() );
-
-      if ( conf.getBoolean( "jbs.documentMapper.dropLinks", false ) )
+      // If we're not dropping the links, then pass the <key,value>
+      // pair straight through.  No need to deserialize into JSON just
+      // to reserialize it right back out again.
+      if ( ! this.dropLinks )
         {
-          d.clearLinks();
+          output.collect( key, value );
+
+          return;
         }
 
+      // Deserialize from JSON, drop the links then write it out.
+      Document d = new Document( value.toString() );
+      d.clearLinks();
       outputValue.set( d.toString() );
-
+      
       output.collect( key, outputValue );
     }
   }
