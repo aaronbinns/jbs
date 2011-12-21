@@ -33,6 +33,9 @@ import org.apache.nutch.parse.ParseText;
 import org.apache.nutch.parse.Outlink;
 import org.apache.nutch.metadata.Metadata;
 
+import org.archive.jbs.util.TextReader;
+
+
 /** 
  * Command-line driver and MapReduce code for converting and merging
  * Documents.  Documents can be converted/synthesized from text-files
@@ -230,7 +233,7 @@ public class Merge extends Configured implements Tool
         }
 
       // Deserialize from JSON, drop the links then write it out.
-      Document d = new Document( value.toString() );
+      Document d = fromText( value );
       d.clearLinks();
       outputValue.set( d.toString() );
       
@@ -253,11 +256,11 @@ public class Merge extends Configured implements Tool
       if ( ! values.hasNext( ) ) return ;
       
       // Create a Document of the first JSON value.
-      Document doc = new Document( values.next().toString() );
+      Document doc = fromText( values.next() );
 
       while ( values.hasNext( ) )
         {
-          doc.merge( new Document( values.next().toString() ) );
+          doc.merge( fromText( values.next() ) );
         }
       
       outputValue.set( doc.toString() );
@@ -351,6 +354,15 @@ public class Merge extends Configured implements Tool
     RunningJob rj = JobClient.runJob( conf );
     
     return rj.isSuccessful( ) ? 0 : 1;
+  }
+
+  /**
+   * Utility method to construct a JSON Object from a Text
+   */
+  public static Document fromText( Text text )
+    throws IOException
+  {
+    return new Document( new TextReader( text ) );
   }
 
 }
