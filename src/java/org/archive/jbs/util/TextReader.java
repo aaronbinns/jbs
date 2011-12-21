@@ -22,7 +22,9 @@ import java.util.*;
 
 import org.apache.hadoop.io.Text;
 
-
+/**
+ * Read characters from a Hadoop Text object.
+ */
 public class TextReader extends Reader
 {
   private ByteBuffer buf;
