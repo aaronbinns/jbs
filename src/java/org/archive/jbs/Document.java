@@ -22,6 +22,7 @@ import java.util.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
+import org.json.JSONTokener;
 
 /**
  * Document for use with Hadoop and full-text processing and analysis.
@@ -62,6 +63,24 @@ public class Document
     fromJSON( json );
   }
 
+  /**
+   * Construct a document from a JSON string via a Reader.
+   */
+  public Document( Reader r )
+    throws IOException
+  {
+    this();
+
+    try
+      {
+        fromJSON( new JSONObject( new JSONTokener( r ) ) );
+      }
+    catch ( JSONException jse )
+      {
+        throw new IOException( jse );
+      }
+  }
+  
   /**
    * Get the String value for the property key.  If the property has
    * multiple values, get one of them.  If the property doesn't exist
@@ -421,16 +440,15 @@ public class Document
       }
   }
 
+ 
   /**
-   *
+   * Initialize self from given JSONObject
    */
-  private void fromJSON( String s )
+  private void fromJSON( JSONObject json )
     throws IOException
   {
     try
       {
-        JSONObject json = new JSONObject( s );
-        
         String[] names = JSONObject.getNames( json );
 
         // If no names, then empty object.
@@ -466,6 +484,24 @@ public class Document
                 this.addLink( jlink.optString( "url" ), jlink.optString( "text" ) );
               }
           }
+      }
+    catch ( JSONException jse )
+      {
+        throw new IOException( jse );
+      }
+  }
+
+  /**
+   * Initialize self from given JSON string
+   */
+  private void fromJSON( String s )
+    throws IOException
+  {
+    try
+      {
+        JSONObject json = new JSONObject( s );
+        
+        fromJSON( json );
       }
     catch ( JSONException jse )
       {
