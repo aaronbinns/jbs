@@ -422,7 +422,7 @@ public class Document
   }
 
   /**
-   *
+   * Serialize in from a JSON string.
    */
   private void fromJSON( String s )
     throws IOException
@@ -440,30 +440,38 @@ public class Document
           {
             name = name.trim();
 
-            // Handle links separately.
-            if ( "outlinks".equals( name ) ) continue;
+            Object o = json.get( name );
 
-            String value = json.getString( name );
-            
-            this.add( name, value );
-          }
-
-        Object o = json.opt( "outlinks" );
-        if ( (o != null) && (o instanceof JSONArray) )
-          {
-            JSONArray a = (JSONArray) o;
-
-            for ( int i = 0; i < a.length() ; i++ )
+            if ( o instanceof String )
               {
-                Object l = a.get(i);
+                this.add( name, (String) o );
+              }
+            else if ( o instanceof JSONArray )
+              {
+                JSONArray values = (JSONArray) o;
                 
-                // Hrm, it should be an object.
-                if ( ! (l instanceof JSONObject) ) continue;
-
-                JSONObject jlink = (JSONObject) l;
-                
-                // Use optString() to get "" rather than 'null' if there is no value.
-                this.addLink( jlink.optString( "url" ), jlink.optString( "text" ) );
+                for ( int i = 0; i < values.length() ; i++ )
+                  {
+                    Object value = values.get(i);
+                    
+                    if ( "outlinks".equals(name) )
+                      {
+                        // Hrm, it should be an object.
+                        if ( ! (value instanceof JSONObject) ) continue;
+                        
+                        JSONObject link = (JSONObject) value;
+                        
+                        // Use optString() to get "" rather than 'null' if there is no value.
+                        this.addLink( link.optString( "url" ), link.optString( "text" ) );
+                      }
+                    else
+                      {
+                        // For any multi-valued property (other than
+                        // "outlinks") assume that it is an array of
+                        // Strings.  So just cast to String here.
+                        this.add( name, (String) value );
+                      }
+                  }
               }
           }
       }
