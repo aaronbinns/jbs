@@ -33,9 +33,6 @@ import org.apache.nutch.parse.ParseText;
 import org.apache.nutch.parse.Outlink;
 import org.apache.nutch.metadata.Metadata;
 
-import org.archive.jbs.util.TextReader;
-
-
 /** 
  * Command-line driver and MapReduce code for converting and merging
  * Documents.  Documents can be converted/synthesized from text-files
@@ -362,7 +359,7 @@ public class Merge extends Configured implements Tool
   public static Document fromText( Text text )
     throws IOException
   {
-    return new Document( new TextReader( text ) );
+    return new Document( new InputStreamReader( new ByteArrayInputStream( text.getBytes() ), "utf-8" ) );
   }
 
 }
