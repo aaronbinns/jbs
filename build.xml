@@ -56,8 +56,14 @@
                excludes="${lib.dir}/hadoop-*-core.jar,${lib.dir}/commons-logging-api-*.jar" />
       <fileset dir="." 
                includes="${lib.dir}/profiles/**" />
+      <fileset dir="." 
+               includes="${lib.dir}/plugins/**" />
       <fileset file="${lib.dir}/effective_tld_names.dat" />
       <fileset file="${lib.dir}/common-terms.utf8" />
+      <fileset file="${lib.dir}/nutch-default.xml" />
+      <fileset file="${lib.dir}/nutch-site.xml" />
+      <fileset file="${lib.dir}/parse-plugins.xml" />
+      <fileset file="${lib.dir}/tika-mimetypes.xml" />
     </jar>
   </target>
 
