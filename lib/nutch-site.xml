@@ -10,7 +10,7 @@
   <!-- Add 'index-nutchwax' and 'query-nutchwax' to plugin list. -->
   <!-- Also, add 'parse-pdf' -->
   <!-- Remove 'urlfilter-regex' and 'normalizer-(pass|regex|basic)' -->
-  <value>parse-(pdf2|tika|text|html)</value>
+  <value>parse-(pdf2|tika|text|html)|html-decorator</value>
 </property>
 
 <!-- 

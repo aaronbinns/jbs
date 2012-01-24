@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin
+   id="html-decorator"
+   name="NutchWAX HTML Decorator"
+   version="1.0.0"
+   provider-name="nutch.org">
+
+  <runtime>
+    <library name="html-decorator.jar">
+      <export name="*"/>
+    </library>
+  </runtime>
+  
+  <requires>
+    <import plugin="nutch-extensionpoints"/>
+  </requires>
+  
+  <extension id="org.archive.nutchwax.html.HtmlDecorator"
+             name="NutchWAX HTML Decorator"
+             point="org.apache.nutch.parse.HtmlParseFilter">
+    <implementation id="HtmlDecorator"
+                    class="org.archive.nutchwax.html.HtmlDecorator" />
+  </extension>
+  
+</plugin>
