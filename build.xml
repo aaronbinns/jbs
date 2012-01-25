@@ -60,8 +60,7 @@
                includes="${lib.dir}/plugins/**" />
       <fileset file="${lib.dir}/effective_tld_names.dat" />
       <fileset file="${lib.dir}/common-terms.utf8" />
-      <fileset file="${lib.dir}/nutch-default.xml" />
-      <fileset file="${lib.dir}/nutch-site.xml" />
+      <fileset file="${lib.dir}/conf-parse.xml" />
       <fileset file="${lib.dir}/parse-plugins.xml" />
       <fileset file="${lib.dir}/tika-mimetypes.xml" />
     </jar>
