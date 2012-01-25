@@ -86,7 +86,6 @@ public class Parse extends Configured implements Tool
   {
     private JobConf        jobConf;
     private ParseUtil      parseUtil;
-    private HTTPStatusCodeFilter httpStatusCodeFilter;
       
     /**
      * <p>Configures the job.  Sets the url filters, scoring filters, url normalizers
@@ -98,17 +97,12 @@ public class Parse extends Configured implements Tool
     {
       this.jobConf = job;
       this.parseUtil = new ParseUtil( jobConf );
-      this.httpStatusCodeFilter = new HTTPStatusCodeFilter( jobConf.get( "nutchwax.filter.http.status" ) );
     }
     
     /**
-     * <p>Runs the Map job to import records from an archive file into a
-     * Nutch segment.</p>
-     * 
-     * @param key Line number in manifest corresponding to the <code>value</code>
-     * @param value A line from the manifest
-     * @param output The output collecter.
-     * @param reporter The progress reporter.
+     * Read the records from the (w)arc file named in the
+     * <code>key</code>, parse each record (if possible) and emit a
+     * JSON Document of the parsed record body.
      */
     public void map( Text key, Text value, OutputCollector output, Reporter reporter )
       throws IOException
@@ -138,7 +132,7 @@ public class Parse extends Configured implements Tool
         {
           LOG.error( "Error processing archive file: " + path, e );
           
-          if ( jobConf.getBoolean( "nutchwax.import.abortOnArchiveReadError", false ) )
+          if ( jobConf.getBoolean( "jbs.parse.abortOnArchiveReadError", false ) )
             {
               throw new IOException( e );
             }
@@ -161,58 +155,51 @@ public class Parse extends Configured implements Tool
      * @return whether record was imported or not (i.e. filtered out due to URL filtering rules, etc.)
      */
     private boolean importRecord( ARCRecord record, OutputCollector output )
+      throws IOException
     {
       ARCRecordMetaData meta = record.getMetaData();
+
+      if ( LOG.isInfoEnabled() ) LOG.info( "Process: " + meta.getUrl() + " (" + meta.getMimetype() + ") [" + meta.getLength( ) + "]" );
+            
+      // Skip the HTTP headers in the response body, so that the
+      // parsers are parsing the reponse body and not the HTTP
+      // headers.
+      record.skipHttpHeader();
       
-      if ( LOG.isInfoEnabled() ) LOG.info( "Consider URL: " + meta.getUrl() + " (" + meta.getMimetype() + ") [" + meta.getLength( ) + "]" );
+      // We use record.available() rather than meta.getLength()
+      // because the latter includes the size of the HTTP header,
+      // which we just skipped.
+      long length = record.available();
+      byte[] bytes = readBytes( record, length );
       
-      if ( ! this.httpStatusCodeFilter.isAllowed( record.getStatusCode( ) ) )
+      // If there is no digest, then we assume we're reading an
+      // ARCRecord not a WARCRecord.  In that case, we close the
+      // record, which updates the digest string.  Then we tweak the
+      // digest string so we have the same for for both ARC and WARC
+      // records.
+      if ( meta.getDigest() == null )
         {
-          if ( LOG.isInfoEnabled() ) LOG.info( "Skip     URL: " + meta.getUrl() + " HTTP status:" + record.getStatusCode() );
+          record.close();
           
-          return false;
+          // This is a bit hacky, but ARC and WARC records produce
+          // two slightly different digest formats.  WARC record
+          // digests have the algorithm name as a prefix, such as
+          // "sha1:PD3SS4WWZVFWTDC63RU2MWX7BVC2Y2VA" but the
+          // ArcRecord.getDigestStr() does not.  Since we want the
+          // formats to match, we prepend the "sha1:" prefix to ARC
+          // record digest.
+          meta.setDigest( "sha1:" + record.getDigestStr() );
         }
       
+      String key = meta.getUrl() + " " + meta.getDigest( );
+
       try
         {
-          // Skip the HTTP headers in the response body, so that the
-          // parsers are parsing the reponse body and not the HTTP
-          // headers.
-          record.skipHttpHeader();
-          
-          // We use record.available() rather than meta.getLength()
-          // because the latter includes the size of the HTTP header,
-          // which we just skipped.
-          long length = record.available();
-          byte[] bytes = readBytes( record, length );
-          
-          // If there is no digest, then we assume we're reading an
-          // ARCRecord not a WARCRecord.  In that case, we close the
-          // record, which updates the digest string.  Then we tweak the
-          // digest string so we have the same for for both ARC and WARC
-          // records.
-          if ( meta.getDigest() == null )
-            {
-              record.close();
-              
-              // This is a bit hacky, but ARC and WARC records produce
-              // two slightly different digest formats.  WARC record
-              // digests have the algorithm name as a prefix, such as
-              // "sha1:PD3SS4WWZVFWTDC63RU2MWX7BVC2Y2VA" but the
-              // ArcRecord.getDigestStr() does not.  Since we want the
-              // formats to match, we prepend the "sha1:" prefix to ARC
-              // record digest.
-              meta.setDigest( "sha1:" + record.getDigestStr() );
-            }
-
-          String url = meta.getUrl();
-          String key = url + " " + meta.getDigest( );
-          
           Metadata contentMetadata = new Metadata();
-
+          
           // We store both the normal URL and the URL+digest key for
           // later retrieval by the indexing plugin(s).
-          contentMetadata.set( "url",     url  );
+          contentMetadata.set( "url",    meta.getUrl()  );
           contentMetadata.set( "date",   meta.getDate()     );
           contentMetadata.set( "digest", meta.getDigest()   );
           contentMetadata.set( "length", String.valueOf( meta.getLength() ) );
@@ -227,9 +214,7 @@ public class Parse extends Configured implements Tool
               type = null;
             }
           
-          Content content = new Content( url, url, bytes, type, contentMetadata, this.jobConf );
-          
-          if ( LOG.isInfoEnabled() ) LOG.info( "Auto-detect content-type: " + type + " " + content.getContentType( ) + " " + url );
+          Content content = new Content( meta.getUrl(), meta.getUrl(), bytes, type, contentMetadata, this.jobConf );
           
           // Store both the original and auto-detected content types.
           contentMetadata.set( "type",  content.getContentType( ) );
@@ -238,7 +223,7 @@ public class Parse extends Configured implements Tool
                "application/xhtml+xml".equals( content.getContentType( ) ) ||
                "application/xhtml"    .equals( content.getContentType( ) ) )
             {
-              int size = jobConf.getInt( "nutchwax.import.content.limit.html", -1 );
+              int size = jobConf.getInt( "jbs.parse.content.limit.html", -1 );
               if ( size > 0 && size < length )
                 {
                   LOG.warn( "HTML file size exceeds threshold [" + size + "]: " + meta.getUrl( ) + " [" + length + "]" );
@@ -250,7 +235,7 @@ public class Parse extends Configured implements Tool
               
               try
                 {
-                  if ( jobConf.getBoolean( "nutchwax.import.boilerpipe", false ) )
+                  if ( jobConf.getBoolean( "jbs.parse.boilerpipe", false ) )
                     {
                       // BoilerPipe!
                       contentMetadata.set( "boiled", de.l3s.boilerpipe.extractors.DefaultExtractor.INSTANCE.getText( new org.xml.sax.InputSource( new java.io.ByteArrayInputStream( bytes ) ) ) );
@@ -264,7 +249,7 @@ public class Parse extends Configured implements Tool
           
           if ( "text/plain".equals( content.getContentType( ) ) )
             {
-              int size = jobConf.getInt( "nutchwax.import.content.limit.text", -1 );
+              int size = jobConf.getInt( "jbs.parse.content.limit.text", -1 );
               if ( size > 0 && size < length )
                 {
                   LOG.warn( "Text file size exceeds threshold [" + size + "]: " + meta.getUrl( ) + " [" + length + "]" );
@@ -281,7 +266,12 @@ public class Parse extends Configured implements Tool
         }
       catch ( Throwable t )
         {
-          LOG.error( "Parse fail : " + meta.getUrl(), t );
+          Document doc = new Document();
+          doc.set( "status", "error" );
+          doc.set( "errorMessage", "Failed to parse record: " + t.getMessage() );
+          
+          output.collect( key, new Text( doc.toString() ) );
+          // LOG.error( meta.getUrl(), t );
         }
       
       return false;
@@ -297,9 +287,8 @@ public class Parse extends Configured implements Tool
     private void output( OutputCollector output,
                          Text            key,
                          Content         content )
+      throws IOException
     {
-      LOG.info( "output( " + key + " )" );
-      
       ParseResult parseResult = null;
       try
         {
@@ -307,7 +296,11 @@ public class Parse extends Configured implements Tool
         }
       catch ( Throwable t )
         {
-          if ( LOG.isInfoEnabled() ) LOG.info( "Error parsing: " + key, t );
+          Document doc = new Document();
+          doc.set( "status", "error" );
+          doc.set( "errorMessage", "Failed to parse record: " + t.getMessage() );
+          
+          output.collect( key, new Text( doc.toString() ) );
         }
       
       try
@@ -316,7 +309,7 @@ public class Parse extends Configured implements Tool
             {
               for ( Map.Entry<Text, org.apache.nutch.parse.Parse> entry : parseResult )
                 {
-                  Text  url   = entry.getKey();
+                  // Text url = entry.getKey();
                   org.apache.nutch.parse.Parse parse = entry.getValue();
                   ParseStatus parseStatus = parse.getData().getStatus();
                   
@@ -328,8 +321,6 @@ public class Parse extends Configured implements Tool
                   
                   String parsedText = parse.getText();
                   
-                  // TODO: Limit size of parsedText.
-
                   Document doc = new Document();
 
                   ParseData pd = parse.getData();
@@ -337,7 +328,7 @@ public class Parse extends Configured implements Tool
                   doc.set( "title", pd.getTitle( ) );
                   
                   Metadata meta = pd.getContentMeta( );
-                  for ( String name : new String[] { "url", "digest", "length", "collection", "boiled", "date", "type", "keywords", "description" } )
+                  for ( String name : new String[] { "url", "digest", "length", "code", "collection", "boiled", "date", "type", "keywords", "description" } )
                     {
                       doc.set( name, meta.get( name ) );
                     }
@@ -348,22 +339,27 @@ public class Parse extends Configured implements Tool
                     }
                   
                   doc.set( "content_parsed", parsedText );
-
+                  
                   // Emit JSON string
                   output.collect( key, new Text( doc.toString() ) );
                 }
             }
         }
-      catch ( Exception e )
+      catch ( Throwable t )
         {
-          LOG.error( "Error outputting Nutch record for: " + key, e );
+          Document doc = new Document();
+          doc.set( "status", "error" );
+          doc.set( "errorMessage", "Failed to parse record: " + t.getMessage() );
+          
+          output.collect( key, new Text( doc.toString() ) );
+          // LOG.error( "Error writing record for: " + key, e );
         }
     }
     
     /**
      * Utility method to read the content bytes from an archive record.
      * The number of bytes read can be limited via the configuration
-     * property <code>nutchwax.import.content.limit</code>.
+     * property <code>jbs.parse.content.limit</code>.
      */
     private byte[] readBytes( ArchiveRecord record, long contentLength )
       throws IOException
@@ -371,7 +367,7 @@ public class Parse extends Configured implements Tool
       // Ensure the record does strict reading.
       record.setStrict( true );
       
-      long size = jobConf.getLong( "nutchwax.import.content.limit", -1 );
+      long size = jobConf.getLong( "jbs.parse.content.limit", -1 );
       
       if ( size < 0 )
         {
@@ -408,8 +404,6 @@ public class Parse extends Configured implements Tool
           count += record.read( buf, 0, Math.min( buf.length, record.available( ) ) );
         }
       
-      if ( LOG.isInfoEnabled() ) LOG.info( "Bytes read: expected=" + contentLength + " bytes.length=" + bytes.length + " pos=" + pos + " count=" + count );
-      
       // Sanity check.  The number of bytes read into our bytes[]
       // buffer, plus the count of extra stuff read after it should
       // equal the contentLength passed into this function.
@@ -434,81 +428,69 @@ public class Parse extends Configured implements Tool
         return 1;
       }
 
-    try
+    FileSystem fs = FileSystem.get( getConf() );
+    
+    // Create a job configuration
+    JobConf job = new JobConf( getConf( ) );
+    
+    // Job name uses output dir to help identify it to the operator.
+    job.setJobName( "jbs.Parse " + args[0] );
+    
+    // The inputs are a list of filenames, use the
+    // FilenameInputFormat to pass them to the mappers.
+    job.setInputFormat( FilenameInputFormat.class );
+    
+    // This is a map-only job, no reducers.
+    job.setNumReduceTasks(0);
+    
+    // Use the Parse-specific output format.
+    job.setOutputFormat( ParseOutputFormat.class );
+    
+    // Use our ParseMapper, with output keys and values of type
+    // Text.
+    job.setMapperClass( ParseMapper.class );
+    job.setOutputKeyClass  ( Text.class );
+    job.setOutputValueClass( Text.class );
+    
+    // Configure the input and output paths, from the command-line.
+    Path outputDir = new Path( args[0] );
+    FileOutputFormat.setOutputPath( job, outputDir );
+    
+    boolean atLeastOneInput = false;
+    for ( int i = 1 ; i < args.length ; i++ )
       {
-        FileSystem fs = FileSystem.get( getConf() );
-
-        // Create a job configuration
-        JobConf job = new JobConf( getConf( ) );
-
-        // Job name uses output dir to help identify it to the operator.
-        job.setJobName( "jbs.Parse " + args[0] );
-        
-        // Required to configure the Nutch(WAX) plugins and stuff.
-        job.addResource("nutch-default.xml");
-        job.addResource("nutch-site.xml");
-
-        // The inputs are a list of filenames, use the
-        // FilenameInputFormat to pass them to the mappers.
-        job.setInputFormat( FilenameInputFormat.class );
-
-        // This is a map-only job, no reducers.
-        job.setNumReduceTasks(0);
-
-        // Use the Parse-specific output format.
-        job.setOutputFormat( ParseOutputFormat.class );
-
-        // Use our ParseMapper, with output keys and values of type
-        // Text.
-        job.setMapperClass( ParseMapper.class );
-        job.setOutputKeyClass  ( Text.class );
-        job.setOutputValueClass( Text.class );
-
-        // Configure the input and output paths, from the command-line.
-        Path outputDir = new Path( args[0] );
-        FileOutputFormat.setOutputPath( job, outputDir );
-
-        boolean atLeastOneInput = false;
-        for ( int i = 1 ; i < args.length ; i++ )
+        for ( FileStatus status : fs.globStatus( new Path( args[i] ) ) )
           {
-            for ( FileStatus status : fs.globStatus( new Path( args[i] ) ) )
+            Path inputPath  = status.getPath();
+            Path outputPath = new Path( outputDir, inputPath.getName() );
+            if ( fs.exists( outputPath ) )
               {
-                Path inputPath  = status.getPath();
-                Path outputPath = new Path( outputDir, inputPath.getName() );
-                if ( fs.exists( outputPath ) )
-                  {
-                    LOG.warn( "Output path already exists: " + outputPath );
-                  }
-                else
-                  {
-                    atLeastOneInput = true;
-                    FileInputFormat.addInputPath( job, inputPath );
-                  }
+                LOG.warn( "Output path already exists: " + outputPath );
+              }
+            else
+              {
+                atLeastOneInput = true;
+                FileInputFormat.addInputPath( job, inputPath );
               }
           }
-        
-        if ( ! atLeastOneInput )
-          {
-            LOG.info( "No input files to parse." );
-            return 0;
-          }
-
-        // Run the job!
-        RunningJob rj = JobClient.runJob( job );
-        
-        if ( ! rj.isSuccessful( ) )
-          {
-            LOG.error( "FAILED: " + rj.getID() );
-            return 2;
-          }
-
+      }
+    
+    if ( ! atLeastOneInput )
+      {
+        LOG.info( "No input files to parse." );
         return 0;
       }
-    catch ( Exception e )
+    
+    // Run the job!
+    RunningJob rj = JobClient.runJob( job );
+    
+    if ( ! rj.isSuccessful( ) )
       {
-        LOG.fatal( "FAILED: ", e );
+        LOG.error( "FAILED: " + rj.getID() );
         return 2;
       }
+    
+    return 0;
   }
 
   /**
@@ -528,7 +510,15 @@ public class Parse extends Configured implements Tool
    */
   public static void main( String args[] ) throws Exception
   {
-    int result = ToolRunner.run( new JobConf(Parse.class), new Parse(), args );
+    JobConf conf = new JobConf(Parse.class);
+
+    // Load the default set of config properties, including the
+    // essential properties needed by the bits of Nutch that we are
+    // still using.  These properties can still be over-ridden by
+    // command-line args.
+    conf.addResource( "conf-parse.xml" );
+
+    int result = ToolRunner.run( conf, new Parse(), args );
 
     System.exit( result );
   }
