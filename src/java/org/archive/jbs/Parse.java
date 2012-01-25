@@ -66,12 +66,10 @@ import org.apache.nutch.protocol.Content;
 import org.apache.nutch.util.NutchConfiguration;
 import org.apache.nutch.util.NutchJob;
 
-import org.archive.io.ArchiveRecord;
-import org.archive.io.arc.ARCRecord;
-import org.archive.io.arc.ARCRecordMetaData;
-import org.archive.io.arc.ARCReader;
+import org.archive.io.warc.WARCConstants;
 
 import org.archive.jbs.arc.ArcReader;
+import org.archive.jbs.arc.ArchiveRecordProxy;
 
 /**
  * Parse the contents of a (W)ARC file, output
@@ -116,14 +114,42 @@ public class Parse extends Configured implements Tool
 
           ArcReader reader = new ArcReader( path, fis );
           
-          for ( ARCRecord record : reader )
+          for ( ArchiveRecordProxy record : reader )
             {
-              // When reading WARC files, records of type other than
-              // "response" are returned as 'null' by the Iterator, so
-              // we skip them.
-              if ( record == null ) continue ;
-              
-              importRecord( record, output );
+              // If this is an HTTP response record, do all the parsing and stuff.
+              if ( WARCConstants.RESPONSE.equals( record.getWARCRecordType() ) )
+                {
+                  if ( WARCConstants.HTTP_RESPONSE_MIMETYPE.equals( record.getWARCContentType() ) )
+                    {
+                      LOG.info( "Process response: " + record.getUrl() + " digest:" + record.getDigest() + " date: " + record.getDate() );
+                      
+                      importRecord( record, output );
+                    }
+                  else
+                    {
+                      LOG.info( "Skip response: " + record.getUrl() + " response-type:" + record.getWARCContentType() + " date: " + record.getDate() );
+                    }
+                }
+              else if ( WARCConstants.REVISIT.equals( record.getWARCRecordType() ) )
+                {
+                  // If this is a revisit record, just create a JSON
+                  // Document with the relevant info.  No parsing or
+                  // anything needed.
+                  LOG.info( "Process revisit: " + record.getUrl() + " digest:" + record.getDigest() + " date: " + record.getDate() );
+
+                  Text docKey = new Text( record.getUrl() + " " + record.getDigest( ) );
+
+                  Document doc = new Document();
+                  doc.set( "url",    record.getUrl() );
+                  doc.set( "digest", record.getDigest() );
+                  doc.set( "date",   record.getDate() );
+                  
+                  output.collect( key, new Text( doc.toString() ) );
+                 }
+              else 
+                {
+                  LOG.info( "Skip record: " + record.getUrl() + " record-type:" + record.getWARCRecordType() + " date: " + record.getDate() );
+                }
               
               reporter.progress();
             }
@@ -154,44 +180,10 @@ public class Parse extends Configured implements Tool
      * @param output
      * @return whether record was imported or not (i.e. filtered out due to URL filtering rules, etc.)
      */
-    private boolean importRecord( ARCRecord record, OutputCollector output )
+    private boolean importRecord( ArchiveRecordProxy record, OutputCollector output )
       throws IOException
     {
-      ARCRecordMetaData meta = record.getMetaData();
-
-      if ( LOG.isInfoEnabled() ) LOG.info( "Process: " + meta.getUrl() + " (" + meta.getMimetype() + ") [" + meta.getLength( ) + "]" );
-            
-      // Skip the HTTP headers in the response body, so that the
-      // parsers are parsing the reponse body and not the HTTP
-      // headers.
-      record.skipHttpHeader();
-      
-      // We use record.available() rather than meta.getLength()
-      // because the latter includes the size of the HTTP header,
-      // which we just skipped.
-      long length = record.available();
-      byte[] bytes = readBytes( record, length );
-      
-      // If there is no digest, then we assume we're reading an
-      // ARCRecord not a WARCRecord.  In that case, we close the
-      // record, which updates the digest string.  Then we tweak the
-      // digest string so we have the same for for both ARC and WARC
-      // records.
-      if ( meta.getDigest() == null )
-        {
-          record.close();
-          
-          // This is a bit hacky, but ARC and WARC records produce
-          // two slightly different digest formats.  WARC record
-          // digests have the algorithm name as a prefix, such as
-          // "sha1:PD3SS4WWZVFWTDC63RU2MWX7BVC2Y2VA" but the
-          // ArcRecord.getDigestStr() does not.  Since we want the
-          // formats to match, we prepend the "sha1:" prefix to ARC
-          // record digest.
-          meta.setDigest( "sha1:" + record.getDigestStr() );
-        }
-      
-      String key = meta.getUrl() + " " + meta.getDigest( );
+      String key = record.getUrl() + " " + record.getDigest( );
 
       try
         {
@@ -199,38 +191,30 @@ public class Parse extends Configured implements Tool
           
           // We store both the normal URL and the URL+digest key for
           // later retrieval by the indexing plugin(s).
-          contentMetadata.set( "url",    meta.getUrl()  );
-          contentMetadata.set( "date",   meta.getDate()     );
-          contentMetadata.set( "digest", meta.getDigest()   );
-          contentMetadata.set( "length", String.valueOf( meta.getLength() ) );
-          contentMetadata.set( "code",   String.valueOf( record.getStatusCode() ) );
+          contentMetadata.set( "url",    record.getUrl()  );
+          contentMetadata.set( "date",   record.getDate()     );
+          contentMetadata.set( "digest", record.getDigest()   );
+          contentMetadata.set( "length", String.valueOf( record.getLength() ) );
+          contentMetadata.set( "code",   record.getHttpStatusCode() );
           
-          String type = (meta.getMimetype( ) == null ? "" : meta.getMimetype( )).split( "[;]" )[0].toLowerCase().trim();
-          
-          // If the Content-Type from the HTTP response is "text/plain",
-          // set it to null to trigger full auto-detection via Tika.
-          if ( "text/plain".equals( type ) )
-            {
-              type = null;
-            }
-          
-          Content content = new Content( meta.getUrl(), meta.getUrl(), bytes, type, contentMetadata, this.jobConf );
-          
-          // Store both the original and auto-detected content types.
+          // The Nutch Content object will invoke Tika's magic/mime-detection.
+          Content content = new Content( record.getUrl(), record.getUrl(), record.getHttpResponseBody(), null, contentMetadata, this.jobConf );
+
+          // Retain the auto-detected Content-Type/MIME-Type.
           contentMetadata.set( "type",  content.getContentType( ) );
-          
+
+          // Limit the size of either the HTML or text document to avoid blowing up the parsers.
+          // Also boilerpipe the HTML.
           if ( "text/html"            .equals( content.getContentType( ) ) || 
                "application/xhtml+xml".equals( content.getContentType( ) ) ||
                "application/xhtml"    .equals( content.getContentType( ) ) )
             {
               int size = jobConf.getInt( "jbs.parse.content.limit.html", -1 );
-              if ( size > 0 && size < length )
+              if ( size > 0 && size < record.getLength() )
                 {
-                  LOG.warn( "HTML file size exceeds threshold [" + size + "]: " + meta.getUrl( ) + " [" + length + "]" );
+                  LOG.warn( "HTML file size exceeds threshold [" + size + "]: " + record.getUrl( ) + " [" + record.getLength() + "]" );
                   
-                  bytes = Arrays.copyOf( bytes, size );
-                  
-                  content.setContent( bytes );
+                  content.setContent( Arrays.copyOf( record.getHttpResponseBody(), size ) );
                 }
               
               try
@@ -238,25 +222,23 @@ public class Parse extends Configured implements Tool
                   if ( jobConf.getBoolean( "jbs.parse.boilerpipe", false ) )
                     {
                       // BoilerPipe!
-                      contentMetadata.set( "boiled", de.l3s.boilerpipe.extractors.DefaultExtractor.INSTANCE.getText( new org.xml.sax.InputSource( new java.io.ByteArrayInputStream( bytes ) ) ) );
+                      contentMetadata.set( "boiled", de.l3s.boilerpipe.extractors.DefaultExtractor.INSTANCE.getText( new org.xml.sax.InputSource( new java.io.ByteArrayInputStream( record.getHttpResponseBody() ) ) ) );
                     }
                 }
               catch ( Exception e ) 
                 { 
-                  LOG.warn( "Error boilerpiping: " + meta.getUrl( ) ); 
+                  LOG.warn( "Error boilerpiping: " + record.getUrl( ) ); 
                 }
             }
           
           if ( "text/plain".equals( content.getContentType( ) ) )
             {
               int size = jobConf.getInt( "jbs.parse.content.limit.text", -1 );
-              if ( size > 0 && size < length )
+              if ( size > 0 && size < record.getLength() )
                 {
-                  LOG.warn( "Text file size exceeds threshold [" + size + "]: " + meta.getUrl( ) + " [" + length + "]" );
+                  LOG.warn( "Text file size exceeds threshold [" + size + "]: " + record.getUrl( ) + " [" + record.getLength() + "]" );
                   
-                  bytes = Arrays.copyOf( bytes, size );
-                  
-                  content.setContent( bytes );
+                  content.setContent( Arrays.copyOf( record.getHttpResponseBody(), size ) );
                 }
             }
           
@@ -354,65 +336,6 @@ public class Parse extends Configured implements Tool
           output.collect( key, new Text( doc.toString() ) );
           // LOG.error( "Error writing record for: " + key, e );
         }
-    }
-    
-    /**
-     * Utility method to read the content bytes from an archive record.
-     * The number of bytes read can be limited via the configuration
-     * property <code>jbs.parse.content.limit</code>.
-     */
-    private byte[] readBytes( ArchiveRecord record, long contentLength )
-      throws IOException
-    {
-      // Ensure the record does strict reading.
-      record.setStrict( true );
-      
-      long size = jobConf.getLong( "jbs.parse.content.limit", -1 );
-      
-      if ( size < 0 )
-        {
-          size = contentLength;
-        }
-      else
-        {
-          size = Math.min( size, contentLength );
-        }
-      
-      // Read the bytes of the HTTP response
-      byte[] bytes = new byte[(int) size];
-      
-      if ( size == 0 )
-        {
-          return bytes;
-        }
-      
-      // NOTE: Do not use read(byte[]) because ArchiveRecord does NOT over-ride
-      //       the implementation inherited from InputStream.  And since it does
-      //       not over-ride it, it won't do the digesting on it.  Must use either
-      //       read(byte[],offset,length) or read().
-      int pos = 0;
-      while ( (pos += record.read( bytes, pos, (bytes.length - pos) )) < bytes.length )
-        ;
-      
-      // Now that the bytes[] buffer has been filled, read the remainder
-      // of the record so that the digest is computed over the entire
-      // content.
-      byte[] buf = new byte[1024 * 1024];
-      int count = 0;
-      while ( record.available( ) > 0 )
-        {
-          count += record.read( buf, 0, Math.min( buf.length, record.available( ) ) );
-        }
-      
-      // Sanity check.  The number of bytes read into our bytes[]
-      // buffer, plus the count of extra stuff read after it should
-      // equal the contentLength passed into this function.
-      if ( pos + count != contentLength )
-        {
-          throw new IOException( "Incorrect number of bytes read from ArchiveRecord: expected=" + contentLength + " bytes.length=" + bytes.length + " pos=" + pos + " count=" + count );
-        }
-      
-      return bytes;
     }
 
   }

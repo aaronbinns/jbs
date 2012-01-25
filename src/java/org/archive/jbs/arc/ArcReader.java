@@ -41,44 +41,16 @@ import org.archive.io.warc.WARCRecord;
 import org.apache.commons.httpclient.Header;
 
 /**
- * <p>
- *   Reader of both ARC and WARC format archive files.  This is not a
- *   general-purpose archive file reader, but is written specifically
- *   for NutchWAX.  It's possible that this could become a
- *   general-purpose archive file reader, but for now, consider it
- *   custom-tailored to the needs of NutchWAX.
- * </p>
- * <p>
- *   <code>ArcReader</code> is a wrapper around the underlying
- *   <code>ArchiveReader</code> implementation
- *   (<code>ARCReader</code>/<code>WARCReader</code>) which converts
- *   <code>WARCRecord</code>s to <code>ARCRecord</code>s on the fly.
- * </p>
- * <p>
- *   If an <code>ARCReader</code> is being wrapped, then the
- *   underlying <code>ARCRecord</code>s are read and passed-through
- *   unmolested.
- * </p>
- * <p>
- *   If a <code>WARCReader</code> is being wrapped, then the
- *   <code>WARCRecord</code>s are converted to <code>ARCRecord</code>s
- *   on the fly.
- * </p>
- * <p>
- *   <strong>WARNING:</strong> We only convert WARC
- *   <code>response</code> records.  All other WARC record types are
- *   returned as <code>null</code> by the iterator's
- *   <code>next()</code> method.  So, when using the iterator, don't
- *   forget to check for a <code>null</code> value returned by
- *   <code>next()</code>.
- * </p>
+ *
  */
-public class ArcReader implements Iterable<ARCRecord>
+public class ArcReader implements Iterable<ArchiveRecordProxy>
 {
   private ArchiveReader reader;
 
   /**
-   *
+   * Construct an <code>ArchiveReader</code> with the
+   * given path and <code>InputStream</code>.  The path
+   * is used to indicate ARC vs. WARC.
    */
   public ArcReader( String path, InputStream is )
     throws IOException
@@ -105,23 +77,23 @@ public class ArcReader implements Iterable<ARCRecord>
    *
    * @return an interator
    */
-  public Iterator<ARCRecord> iterator( )
+  public Iterator<ArchiveRecordProxy> iterator( )
   {
-    return new ArcIterator( );
+    return new ArchiveRecordProxyIterator( );
   }
 
   /**
    * 
    */
-  private class ArcIterator implements Iterator<ARCRecord>
+  private class ArchiveRecordProxyIterator implements Iterator<ArchiveRecordProxy>
   {
     private Iterator<ArchiveRecord> i;
 
     /**
-     * Construct an <code>ArcIterator</code>, skipping the header
+     * Construct a <code>ArchiveRecordProxyIterator</code>, skipping the header
      * record if the wrapped reader is an <code>ARCReader</code>.
      */
-    public ArcIterator( )
+    public ArchiveRecordProxyIterator( )
     {
       this.i = ArcReader.this.reader.iterator( );
       
@@ -153,7 +125,7 @@ public class ArcReader implements Iterable<ARCRecord>
      * 
      * @return the next element in the iteration, which can be <code>null</code>
      */
-    public ARCRecord next( )
+    public ArchiveRecordProxy next( )
     {
       try
         {
@@ -161,19 +133,16 @@ public class ArcReader implements Iterable<ARCRecord>
           
           if ( record instanceof ARCRecord )
             {
-              // Just return the ARCRecord as-is.
-              ARCRecord arc = (ARCRecord) record;
-              
-              return arc;
+              ArchiveRecordProxy proxy = new ArchiveRecordProxy( (ARCRecord) record, -1 );
+
+              return proxy;
             }
           
           if ( record instanceof WARCRecord )
             {
-              WARCRecord warc = (WARCRecord) record;
-              
-              ARCRecord arc = convert( warc );
+              ArchiveRecordProxy proxy = new ArchiveRecordProxy( (WARCRecord) record, -1 );
 
-              return arc;
+              return proxy;
             }
 
           // If we get here then the record we reaad in was neither an ARC
@@ -185,7 +154,6 @@ public class ArcReader implements Iterable<ARCRecord>
           throw new RuntimeException( ioe );
         }
     }
-
     /**
      * Unsupported optional operation.
      *
@@ -196,85 +164,7 @@ public class ArcReader implements Iterable<ARCRecord>
       throw new UnsupportedOperationException( );
     }
 
-    /**
-     * Convert a WARCRecord to an ARCRecord.  Only "response"
-     * WARCRecords are converted to meaningful ARCRecords.  All other
-     * WARCRecord types are converted to <code>null</code>.
-     *
-     * @param warc the WARCRecord to convert
-     * @return the corresponding ARCRecord, <code>null</code> if WARCRecord not a "reponse" record
-     */
-    private ARCRecord convert( WARCRecord warc )
-      throws IOException
-    {
-      ArchiveRecordHeader header = warc.getHeader( );
-      
-      // We only care about "response" WARC records.
-      if ( ! WARCConstants.RESPONSE.equals( header.getHeaderValue( WARCConstants.HEADER_KEY_TYPE ) ) )
-        {
-          return null;
-        }
-              
-      // Construct an ARCRecordMetadata object based on the info in
-      // the ArchiveRecordHeader.
-      Map arcMetadataFields = new HashMap( );
-      arcMetadataFields.put( ARCConstants.URL_FIELD_KEY,       header.getHeaderValue( WARCConstants.HEADER_KEY_URI  ) );
-      arcMetadataFields.put( ARCConstants.IP_HEADER_FIELD_KEY, header.getHeaderValue( WARCConstants.HEADER_KEY_IP   ) );
-      arcMetadataFields.put( ARCConstants.MIMETYPE_FIELD_KEY,  header.getHeaderValue( null ) );  // We don't know the MIME type of the *payload* in a WARC (yet)
-      arcMetadataFields.put( ARCConstants.LENGTH_FIELD_KEY,    header.getHeaderValue( WARCConstants.CONTENT_LENGTH  ) );
-      arcMetadataFields.put( ARCConstants.VERSION_FIELD_KEY,   header.getHeaderValue( null ) );  // FIXME: Do we need actual values for these?
-      arcMetadataFields.put( ARCConstants.ABSOLUTE_OFFSET_KEY, header.getOffset( ) );
-
-      // Dates must be converted from WARC format to 14-digit format,
-      // that is, from YYYY-MM-DDTHH:MM:SSZ to YYYYMMDDHHMMSS
-      String warcDate = (String) header.getHeaderValue( WARCConstants.HEADER_KEY_DATE );
-      StringBuilder date = new StringBuilder( )
-        .append( warcDate,  0, 4  )
-        .append( warcDate,  5, 7  )
-        .append( warcDate,  8, 10 )
-        .append( warcDate, 11, 13 )
-        .append( warcDate, 14, 16 )
-        .append( warcDate, 17, 19 );
-
-      arcMetadataFields.put( ARCConstants.DATE_FIELD_KEY, date.toString( ) );
-              
-      ARCRecordMetaData metadata = new ARCRecordMetaData( header.getReaderIdentifier( ), arcMetadataFields );
-
-      metadata.setDigest( (String) header.getHeaderValue( WARCConstants.HEADER_KEY_PAYLOAD_DIGEST ) );
-              
-      // Then, create an ARCRecord using the WARCRecord and the
-      // ARCRecordMetaData object we just created.
-      ARCRecord arc = new ARCRecord( warc, 
-                                     metadata,
-                                     0,    // offset
-                                     true, // digest
-                                     true, // strict
-                                     true  // parse HTTP headers
-                                   );
-      
-      // Now that we've created the ARCRecord, we get the HTTP headers
-      // from it.  From these HTTP headers, we obtain the Content-Type
-      // of the ARCRecord's payload, then set value as the MIME-type
-      // of the ARCRecord itself.
-      
-      // If the response is something other than HTTP
-      // (like DNS) there are no HTTP headers.  
-      if ( arc.getHttpHeaders( ) != null )
-        {
-          for ( Header h : arc.getHttpHeaders( ) )
-            {
-              if ( h.getName( ).equals( "Content-Type" ) )
-                {
-                  arc.getMetaData( ).getHeaderFields( ).put( ARCConstants.MIMETYPE_FIELD_KEY, h.getValue( ) );
-                }
-            }
-        }
-      
-      return arc;
-    }
-
   }
-
 
   /**
    * Simple test/debug driver to read an archive file and print out
@@ -295,12 +185,21 @@ public class ArcReader implements Iterable<ARCRecord>
 
     ArcReader reader = new ArcReader( r );
 
-    for ( ARCRecord rec : reader )
+    for ( ArchiveRecordProxy rec : reader )
       {
-        // Must call close() for digest calculation to be finished.
-        rec.close( );
-
-        if ( rec != null ) System.out.println( rec.getHeader( ) );
+        if ( rec != null ) 
+          {
+            System.out.print( rec.getWARCRecordType()  + " " );
+            System.out.print( rec.getWARCContentType() + " " );
+            System.out.print( rec.getUrl()    + " " );
+            System.out.print( rec.getDigest() + " " );
+            System.out.print( rec.getDate()   + " " );
+            System.out.print( rec.getLength() + " " );
+            System.out.print( rec.getHttpStatusCode() );
+            System.out.print( rec.getHttpResponseBody().length );
+            System.out.println( );
+           }
       }
   }
+
 }
