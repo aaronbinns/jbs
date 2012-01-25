@@ -55,7 +55,7 @@ import org.apache.nutch.metadata.Nutch;
 import org.apache.nutch.net.URLFilterException;
 import org.apache.nutch.net.URLFilters;
 import org.apache.nutch.parse.Outlink;
-import org.apache.nutch.parse.Parse;
+//import org.apache.nutch.parse.Parse;
 import org.apache.nutch.parse.ParseData;
 import org.apache.nutch.parse.ParseImpl;
 import org.apache.nutch.parse.ParseResult;
@@ -77,12 +77,12 @@ import org.archive.jbs.arc.ArcReader;
  * Parse the contents of a (W)ARC file, output
  * in a JSON Document.
  */
-public class Import extends Configured implements Tool
+public class Parse extends Configured implements Tool
 {
 
-  public static final Log LOG = LogFactory.getLog( Import.class );
+  public static final Log LOG = LogFactory.getLog( Parse.class );
 
-  public static class ImportMapper extends MapReduceBase implements Mapper<Text, Text, Text, Text> 
+  public static class ParseMapper extends MapReduceBase implements Mapper<Text, Text, Text, Text> 
   {
     private JobConf        jobConf;
     private ParseUtil      parseUtil;
@@ -153,7 +153,7 @@ public class Import extends Configured implements Tool
     }
     
     /**
-     * Import an ARCRecord.
+     * Parse an ARCRecord.
      *
      * @param record
      * @param segmentName 
@@ -281,7 +281,7 @@ public class Import extends Configured implements Tool
         }
       catch ( Throwable t )
         {
-          LOG.error( "Import fail : " + meta.getUrl(), t );
+          LOG.error( "Parse fail : " + meta.getUrl(), t );
         }
       
       return false;
@@ -314,10 +314,10 @@ public class Import extends Configured implements Tool
         {
           if ( parseResult != null )
             {
-              for ( Map.Entry<Text, Parse> entry : parseResult )
+              for ( Map.Entry<Text, org.apache.nutch.parse.Parse> entry : parseResult )
                 {
                   Text  url   = entry.getKey();
-                  Parse parse = entry.getValue();
+                  org.apache.nutch.parse.Parse parse = entry.getValue();
                   ParseStatus parseStatus = parse.getData().getStatus();
                   
                   if ( !parseStatus.isSuccess() )
@@ -442,7 +442,7 @@ public class Import extends Configured implements Tool
         JobConf job = new JobConf( getConf( ) );
 
         // FIXME: Can we give a better name?
-        job.setJobName( "jbs.Import" );
+        job.setJobName( "jbs.Parse" );
         
         // Required to configure the Nutch(WAX) plugins and stuff.
         job.addResource("nutch-default.xml");
@@ -462,18 +462,18 @@ public class Import extends Configured implements Tool
         job.setOutputFormat( MultipleSequenceFileOutputFormat.class );
         job.setInt( "mapred.outputformat.numOfTrailingLegs", 1 );
 
-        // Use our ImportMapper, with output keys and values of type
+        // Use our ParseMapper, with output keys and values of type
         // Text.
-        job.setMapperClass( ImportMapper.class );
+        job.setMapperClass( ParseMapper.class );
         job.setOutputKeyClass  ( Text.class );
         job.setOutputValueClass( Text.class );
 
         // Configure the input and output paths, from the command-line.
-        for ( int i = 0 ; i < (args.length-1) ; i++ )
+        FileOutputFormat.setOutputPath( job, new Path( args[0] ) );
+        for ( int i = 1 ; i < args.length ; i++ )
           {
             FileInputFormat.addInputPath( job, new Path( args[i] ) );
           }
-        FileOutputFormat.setOutputPath( job, new Path( args[args.length-1] ) );
         
         // Run the job!
         RunningJob rj = JobClient.runJob( job );
@@ -499,18 +499,18 @@ public class Import extends Configured implements Tool
   public void usage( )
   {
     String usage = 
-        "Usage: Import <(w)arcfiles...> <outputDir>\n" 
+        "Usage: Parse <outputDir> <(w)arcfile>...\n" 
       ;
     
     System.out.println( usage );
   }
 
   /**
-   * Command-line driver.  Runs the Import as a Hadoop job.
+   * Command-line driver.  Runs the Parse as a Hadoop job.
    */
   public static void main( String args[] ) throws Exception
   {
-    int result = ToolRunner.run( new JobConf(Import.class), new Import(), args );
+    int result = ToolRunner.run( new JobConf(Parse.class), new Parse(), args );
 
     System.exit( result );
   }

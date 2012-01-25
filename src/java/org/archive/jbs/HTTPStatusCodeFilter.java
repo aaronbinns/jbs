@@ -65,7 +65,7 @@ class HTTPStatusCodeFilter
                 
               default:
                 // Bad format
-                Import.LOG.warn( "Illegal format for nutchwax.filter.http.status: " + range );
+                Parse.LOG.warn( "Illegal format for nutchwax.filter.http.status: " + range );
                 continue ;
               }
 
@@ -73,7 +73,7 @@ class HTTPStatusCodeFilter
           }
         catch ( NumberFormatException nfe )
           {
-            Import.LOG.warn( "Illegal format for nutchwax.filter.http.status: " + range, nfe );
+            Parse.LOG.warn( "Illegal format for nutchwax.filter.http.status: " + range, nfe );
           }
       }
 
