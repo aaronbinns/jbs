@@ -112,7 +112,7 @@
   
   <property>
     <name>parser.html.impl</name>
-    <value>neko</value>
+    <value>tagsoup</value>
     <description>HTML Parser implementation. Currently the following keywords
     are recognized: "neko" uses NekoHTML, "tagsoup" uses TagSoup.
     </description>
