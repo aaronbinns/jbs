@@ -31,8 +31,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.io.compress.CompressionCodec;
-import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.FileSplit;
@@ -40,12 +38,14 @@ import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.JobStatus;
 import org.apache.hadoop.mapred.MapFileOutputFormat;
+import org.apache.hadoop.mapred.SequenceFileOutputFormat;
 import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.RunningJob;
+import org.apache.hadoop.mapred.lib.MultipleSequenceFileOutputFormat;
 import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -66,45 +66,16 @@ import org.apache.nutch.protocol.Content;
 import org.apache.nutch.util.NutchConfiguration;
 import org.apache.nutch.util.NutchJob;
 
-import org.archive.io.ArchiveReader;
 import org.archive.io.ArchiveRecord;
-import org.archive.io.ArchiveReaderFactory;
-import org.archive.io.arc.ARCConstants;
 import org.archive.io.arc.ARCRecord;
 import org.archive.io.arc.ARCRecordMetaData;
 import org.archive.io.arc.ARCReader;
-import org.archive.io.warc.WARCRecord;
-import org.archive.io.warc.WARCConstants;
-import org.archive.io.warc.WARCReader;
 
 import org.archive.jbs.arc.ArcReader;
 
-import org.apache.commons.httpclient.Header;
-
 /**
- * Import Archive files (.arc/.warc) files into a newly-created Nutch
- * segment.
- *
- * <code>Import</code> is coded as a Hadoop job and is intended to
- * be run within the Hadoop framework, or at least started by the
- * Hadoop launcher incorporated into Nutch.  Although there is a
- * <code>main</code> driver, the Nutch launcher script is strongly
- * recommended.
- *
- * This class was initially adapted from the Nutch
- * <code>Fetcher</code> and <code>ArcSegmentCreator</code> classes.
- * The premise is since the Nutch fetching process acquires external
- * content and places it in a Nutch segment, we can perform a similar
- * activity by taking content from the ARC files and place that
- * content in a Nutch segment in a similar fashion.  Ideally, once the
- * <code>Import</code> is used to import a set of ARCs into a Nutch
- * segment, the resulting segment should be more-or-less the same as
- * one created by Nutch's own Fetcher.
- * 
- * Since we are mimicing the Nutch Fetcher, we have to be careful
- * about some implementation details that might not seem relevant
- * to the importing of ARC files.  I've noted those details with
- * comments prefaced with "?:".
+ * Parse the contents of a (W)ARC file, output
+ * in a JSON Document.
  */
 public class Import extends Configured implements Tool
 {
@@ -116,7 +87,6 @@ public class Import extends Configured implements Tool
     private JobConf        jobConf;
     private ParseUtil      parseUtil;
     private HTTPStatusCodeFilter httpStatusCodeFilter;
-    private CompressionCodecFactory compressionCodecs;
       
     /**
      * <p>Configures the job.  Sets the url filters, scoring filters, url normalizers
@@ -129,7 +99,6 @@ public class Import extends Configured implements Tool
       this.jobConf = job;
       this.parseUtil = new ParseUtil( jobConf );
       this.httpStatusCodeFilter = new HTTPStatusCodeFilter( jobConf.get( "nutchwax.filter.http.status" ) );
-      this.compressionCodecs = new CompressionCodecFactory(job);
     }
     
     /**
@@ -455,10 +424,7 @@ public class Import extends Configured implements Tool
   }
 
   /**
-   * Runs the import job with the given arguments.  This method
-   * assumes that is is being run via the command-line; as such, it
-   * emits error messages regarding invalid/missing arguments to the
-   * system error stream.
+   * Run the job.
    */
   public int run( String[] args ) throws Exception
   {
@@ -468,69 +434,62 @@ public class Import extends Configured implements Tool
         return 1;
       }
 
-    FileSystem fs = FileSystem.get( getConf() );
-
-    Path outputDir = new Path( args[args.length-1] );
-
-    if ( !fs.getFileStatus( outputDir  ).isDir() )
-      {
-        LOG.fatal( "Output directory is not a directory: " + outputDir );
-        return 2;
-      }
-    
     try
       {
+        FileSystem fs = FileSystem.get( getConf() );
+
+        // Create a job configuration
+        JobConf job = new JobConf( getConf( ) );
+
+        // FIXME: Can we give a better name?
+        job.setJobName( "jbs.Import" );
+        
+        // Required to configure the Nutch(WAX) plugins and stuff.
+        job.addResource("nutch-default.xml");
+        job.addResource("nutch-site.xml");
+
+        // The inputs are a list of filenames, use the
+        // FilenameInputFormat to pass them to the mappers.
+        job.setInputFormat( FilenameInputFormat.class );
+
+        // This is a map-only job, no reducers.
+        job.setNumReduceTasks(0);
+        
+        // Configure the MultipleSequenceFileOutputFormat so that the
+        // output of the map tasks are named according to their input
+        // files.  Thus, and input file of "foo.warc.gz" results in a
+        // map output file of "foo.warc.gz".
+        job.setOutputFormat( MultipleSequenceFileOutputFormat.class );
+        job.setInt( "mapred.outputformat.numOfTrailingLegs", 1 );
+
+        // Use our ImportMapper, with output keys and values of type
+        // Text.
+        job.setMapperClass( ImportMapper.class );
+        job.setOutputKeyClass  ( Text.class );
+        job.setOutputValueClass( Text.class );
+
+        // Configure the input and output paths, from the command-line.
         for ( int i = 0 ; i < (args.length-1) ; i++ )
           {
-            Path inputGlob = new Path( args[i] );
-
-            for ( FileStatus inputFile : fs.globStatus( inputGlob ) )
-              {
-                JobConf job = new JobConf( getConf( ) );
-                
-                job.addResource("nutch-default.xml");
-                job.addResource("nutch-site.xml");
-                
-                System.err.println( "inputPath=" + inputFile.getPath() );
-                
-                Path inputPath  = inputFile.getPath();
-                Path outputPath = new Path( outputDir, inputPath.getName() );
-                
-                if ( fs.exists( outputPath ) )
-                  {
-                    LOG.warn( "Skipping output path which already exists: " + outputPath );
-                    continue ;
-                  }
-                
-                job.setJobName( "Import " + inputPath.getName() );
-                
-                FileInputFormat.setInputPaths( job, inputPath );
-                job.setInputFormat( FilenameInputFormat.class );
-                
-                job.setMapperClass( ImportMapper.class );
-                
-                FileOutputFormat.setOutputPath( job, outputPath );
-                job.setOutputFormat    ( MapFileOutputFormat.class );
-                job.setOutputKeyClass  ( Text.class );
-                job.setOutputValueClass( Text.class );
-                
-                RunningJob rj = JobClient.runJob( job );
-                
-                if ( ! rj.isSuccessful( ) )
-                  {
-                    LOG.error( "FAILED: " + inputPath );
-                  }
-              }
+            FileInputFormat.addInputPath( job, new Path( args[i] ) );
+          }
+        FileOutputFormat.setOutputPath( job, new Path( args[args.length-1] ) );
+        
+        // Run the job!
+        RunningJob rj = JobClient.runJob( job );
+        
+        if ( ! rj.isSuccessful( ) )
+          {
+            LOG.error( "FAILED: " + rj.getID() );
+            return 2;
           }
 
         return 0;
       }
     catch ( Exception e )
       {
-        LOG.fatal( "Import: ", e );
-        System.out.println( "Fatal error: " + e );
-        e.printStackTrace( System.out );
-        return -1;
+        LOG.fatal( "FAILED: ", e );
+        return 2;
       }
   }
 
@@ -540,7 +499,7 @@ public class Import extends Configured implements Tool
   public void usage( )
   {
     String usage = 
-        "Usage: Import <inputGlob> <outputDir>\n" 
+        "Usage: Import <(w)arcfiles...> <outputDir>\n" 
       ;
     
     System.out.println( usage );
