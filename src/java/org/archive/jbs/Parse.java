@@ -123,7 +123,7 @@ public class Parse extends Configured implements Tool
                     {
                       LOG.info( "Process response: " + record.getUrl() + " digest:" + record.getDigest() + " date: " + record.getDate() );
                       
-                      importRecord( record, output );
+                      parseRecord( record, output );
                     }
                   else
                     {
@@ -180,7 +180,7 @@ public class Parse extends Configured implements Tool
      * @param output
      * @return whether record was imported or not (i.e. filtered out due to URL filtering rules, etc.)
      */
-    private boolean importRecord( ArchiveRecordProxy record, OutputCollector output )
+    private boolean parseRecord( ArchiveRecordProxy record, OutputCollector output )
       throws IOException
     {
       String key = record.getUrl() + " " + record.getDigest( );
@@ -253,18 +253,13 @@ public class Parse extends Configured implements Tool
           doc.set( "errorMessage", "Failed to parse record: " + t.getMessage() );
           
           output.collect( key, new Text( doc.toString() ) );
-          // LOG.error( meta.getUrl(), t );
         }
       
       return false;
     }
         
     /**
-     * Writes the key and related content to the output collector.  The
-     * division between <code>importRecord</code> and
-     * <code>output</code> is merely based on the way the code was
-     * structured in the <code>ArcSegmentCreator.java</code> which was
-     * used as a starting-point for this class.
+     * Writes the key and related content to the output collector.
      */
     private void output( OutputCollector output,
                          Text            key,
@@ -334,7 +329,6 @@ public class Parse extends Configured implements Tool
           doc.set( "errorMessage", "Failed to parse record: " + t.getMessage() );
           
           output.collect( key, new Text( doc.toString() ) );
-          // LOG.error( "Error writing record for: " + key, e );
         }
     }
 
