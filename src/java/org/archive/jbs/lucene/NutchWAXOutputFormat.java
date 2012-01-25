@@ -63,6 +63,8 @@ public class NutchWAXOutputFormat extends LuceneOutputFormat
     handlers.put( "url"        , new SimpleFieldHandler( "url",         Field.Store.YES, Field.Index.ANALYZED ) );
     handlers.put( "digest"     , new SimpleFieldHandler( "digest",      Field.Store.YES, Field.Index.NO       ) );
     handlers.put( "title"      , new SimpleFieldHandler( "title",       Field.Store.YES, Field.Index.ANALYZED ) );
+    handlers.put( "keywords"   , new SimpleFieldHandler( "keywords",    Field.Store.YES, Field.Index.ANALYZED ) );
+    handlers.put( "description", new SimpleFieldHandler( "description", Field.Store.YES, Field.Index.ANALYZED ) );
     handlers.put( "length"     , new SimpleFieldHandler( "length",      Field.Store.YES, Field.Index.NO ) );
     handlers.put( "collection" , new SimpleFieldHandler( "collection",  Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
     handlers.put( "code"       , new SimpleFieldHandler( "code",        Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
