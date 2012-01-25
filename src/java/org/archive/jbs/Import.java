@@ -470,8 +470,7 @@ public class Import extends Configured implements Tool
 
     FileSystem fs = FileSystem.get( getConf() );
 
-    Path inputGlob = new Path( args[0] );
-    Path outputDir = new Path( args[1] );
+    Path outputDir = new Path( args[args.length-1] );
 
     if ( !fs.getFileStatus( outputDir  ).isDir() )
       {
@@ -481,41 +480,46 @@ public class Import extends Configured implements Tool
     
     try
       {
-        for ( FileStatus inputFile : fs.globStatus( inputGlob ) )
+        for ( int i = 0 ; i < (args.length-1) ; i++ )
           {
-            JobConf job = new JobConf( getConf( ) );
+            Path inputGlob = new Path( args[i] );
 
-            job.addResource("nutch-default.xml");
-            job.addResource("nutch-site.xml");
-
-            System.err.println( "inputPath=" + inputFile.getPath() );
-
-            Path inputPath  = inputFile.getPath();
-            Path outputPath = new Path( outputDir, inputPath.getName() );
-            
-            if ( fs.exists( outputPath ) )
+            for ( FileStatus inputFile : fs.globStatus( inputGlob ) )
               {
-                LOG.warn( "Skipping output path which already exists: " + outputPath );
-                continue ;
-              }
-
-            job.setJobName( "Import " + inputPath.getName() );
-            
-            FileInputFormat.setInputPaths( job, inputPath );
-            job.setInputFormat( FilenameInputFormat.class );
-            
-            job.setMapperClass( ImportMapper.class );
-            
-            FileOutputFormat.setOutputPath( job, outputPath );
-            job.setOutputFormat    ( MapFileOutputFormat.class );
-            job.setOutputKeyClass  ( Text.class );
-            job.setOutputValueClass( Text.class );
-            
-            RunningJob rj = JobClient.runJob( job );
-
-            if ( ! rj.isSuccessful( ) )
-              {
-                LOG.error( "FAILED: " + inputPath );
+                JobConf job = new JobConf( getConf( ) );
+                
+                job.addResource("nutch-default.xml");
+                job.addResource("nutch-site.xml");
+                
+                System.err.println( "inputPath=" + inputFile.getPath() );
+                
+                Path inputPath  = inputFile.getPath();
+                Path outputPath = new Path( outputDir, inputPath.getName() );
+                
+                if ( fs.exists( outputPath ) )
+                  {
+                    LOG.warn( "Skipping output path which already exists: " + outputPath );
+                    continue ;
+                  }
+                
+                job.setJobName( "Import " + inputPath.getName() );
+                
+                FileInputFormat.setInputPaths( job, inputPath );
+                job.setInputFormat( FilenameInputFormat.class );
+                
+                job.setMapperClass( ImportMapper.class );
+                
+                FileOutputFormat.setOutputPath( job, outputPath );
+                job.setOutputFormat    ( MapFileOutputFormat.class );
+                job.setOutputKeyClass  ( Text.class );
+                job.setOutputValueClass( Text.class );
+                
+                RunningJob rj = JobClient.runJob( job );
+                
+                if ( ! rj.isSuccessful( ) )
+                  {
+                    LOG.error( "FAILED: " + inputPath );
+                  }
               }
           }
 
