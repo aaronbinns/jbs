@@ -441,8 +441,8 @@ public class Parse extends Configured implements Tool
         // Create a job configuration
         JobConf job = new JobConf( getConf( ) );
 
-        // FIXME: Can we give a better name?
-        job.setJobName( "jbs.Parse" );
+        // Job name uses output dir to help identify it to the operator.
+        job.setJobName( "jbs.Parse " + args[0] );
         
         // Required to configure the Nutch(WAX) plugins and stuff.
         job.addResource("nutch-default.xml");
@@ -454,13 +454,9 @@ public class Parse extends Configured implements Tool
 
         // This is a map-only job, no reducers.
         job.setNumReduceTasks(0);
-        
-        // Configure the MultipleSequenceFileOutputFormat so that the
-        // output of the map tasks are named according to their input
-        // files.  Thus, and input file of "foo.warc.gz" results in a
-        // map output file of "foo.warc.gz".
-        job.setOutputFormat( MultipleSequenceFileOutputFormat.class );
-        job.setInt( "mapred.outputformat.numOfTrailingLegs", 1 );
+
+        // Use the Parse-specific output format.
+        job.setOutputFormat( ParseOutputFormat.class );
 
         // Use our ParseMapper, with output keys and values of type
         // Text.
@@ -469,12 +465,34 @@ public class Parse extends Configured implements Tool
         job.setOutputValueClass( Text.class );
 
         // Configure the input and output paths, from the command-line.
-        FileOutputFormat.setOutputPath( job, new Path( args[0] ) );
+        Path outputDir = new Path( args[0] );
+        FileOutputFormat.setOutputPath( job, outputDir );
+
+        boolean atLeastOneInput = false;
         for ( int i = 1 ; i < args.length ; i++ )
           {
-            FileInputFormat.addInputPath( job, new Path( args[i] ) );
+            for ( FileStatus status : fs.globStatus( new Path( args[i] ) ) )
+              {
+                Path inputPath  = status.getPath();
+                Path outputPath = new Path( outputDir, inputPath.getName() );
+                if ( fs.exists( outputPath ) )
+                  {
+                    LOG.warn( "Output path already exists: " + outputPath );
+                  }
+                else
+                  {
+                    atLeastOneInput = true;
+                    FileInputFormat.addInputPath( job, inputPath );
+                  }
+              }
           }
         
+        if ( ! atLeastOneInput )
+          {
+            LOG.info( "No input files to parse." );
+            return 0;
+          }
+
         // Run the job!
         RunningJob rj = JobClient.runJob( job );
         
