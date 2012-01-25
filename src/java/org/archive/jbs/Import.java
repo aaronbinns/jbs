@@ -493,7 +493,13 @@ public class Import extends Configured implements Tool
             Path inputPath  = inputFile.getPath();
             Path outputPath = new Path( outputDir, inputPath.getName() );
             
-            job.setJobName( "Import " + inputPath );
+            if ( fs.exists( outputPath ) )
+              {
+                LOG.warn( "Skipping output path which already exists: " + outputPath );
+                continue ;
+              }
+
+            job.setJobName( "Import " + inputPath.getName() );
             
             FileInputFormat.setInputPaths( job, inputPath );
             job.setInputFormat( FilenameInputFormat.class );
