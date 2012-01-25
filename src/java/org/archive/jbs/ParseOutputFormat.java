@@ -31,6 +31,10 @@ import org.apache.hadoop.mapred.lib.MultipleSequenceFileOutputFormat;
  * input files, rather than "part-nnnnn".  E.g. if an input file is
  * "foo.warc.gz" then an output file will be created with the same
  * name.
+ *
+ * The MultipleSequenceFileOutputFormat class does the heavy lifting,
+ * in this sub-class we just ensure that the config property is set
+ * which triggers the filename mapping.
  */
 public class ParseOutputFormat<K,V> extends MultipleSequenceFileOutputFormat<K,V>
 {
