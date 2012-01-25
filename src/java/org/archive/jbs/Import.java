@@ -483,7 +483,10 @@ public class Import extends Configured implements Tool
       {
         for ( FileStatus inputFile : fs.globStatus( inputGlob ) )
           {
-            JobConf job = new NutchJob( getConf() );
+            JobConf job = new JobConf( getConf( ) );
+
+            job.addResource("nutch-default.xml");
+            job.addResource("nutch-site.xml");
 
             System.err.println( "inputPath=" + inputFile.getPath() );
 
@@ -538,7 +541,7 @@ public class Import extends Configured implements Tool
    */
   public static void main( String args[] ) throws Exception
   {
-    int result = ToolRunner.run( NutchConfiguration.create(), new Import(), args );
+    int result = ToolRunner.run( new JobConf(Import.class), new Import(), args );
 
     System.exit( result );
   }
