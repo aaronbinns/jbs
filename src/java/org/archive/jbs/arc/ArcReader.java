@@ -1,23 +1,20 @@
 /*
- * Copyright (C) 2008 Internet Archive.
- * 
- * This file is part of the archive-access tools project
- * (http://sourceforge.net/projects/archive-access).
- * 
- * The archive-access tools are free software; you can redistribute them and/or
- * modify them under the terms of the GNU Lesser Public License as published by
- * the Free Software Foundation; either version 2.1 of the License, or any
- * later version.
- * 
- * The archive-access tools are distributed in the hope that they will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser
- * Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser Public License along with
- * the archive-access tools; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package org.archive.jbs.arc;
 
 import java.util.Iterator;
@@ -33,6 +30,7 @@ import org.archive.io.ArchiveRecordHeader;
 
 import org.archive.io.arc.ARCConstants;
 import org.archive.io.arc.ARCReader;
+import org.archive.io.arc.ARCReaderFactory;
 import org.archive.io.arc.ARCRecord;
 import org.archive.io.arc.ARCRecordMetaData;
 import org.archive.io.warc.WARCConstants;
@@ -41,7 +39,12 @@ import org.archive.io.warc.WARCRecord;
 import org.apache.commons.httpclient.Header;
 
 /**
+ * Convenience wrapper around the (W)ARC readers which allows for
+ * simple iteration through an (W)ARC file, returning a series of
+ * ArchiveRecordProxy objects.
  *
+ * This is not a general purpose (W)ARC reading class.  It is tailored
+ * to the needs of jbs.Parse.
  */
 public class ArcReader implements Iterable<ArchiveRecordProxy>
 {
@@ -58,6 +61,23 @@ public class ArcReader implements Iterable<ArchiveRecordProxy>
   {
     this.reader = ArchiveReaderFactory.get( path, is, true );
     this.reader.setDigest( true );
+
+    // If we are reading arc files, then we have to explictly enable
+    // the parsing of the HTTP headers.  If we don't, then the call to
+    // arc.skipHttpHeader() in the ArchiveRecordProxy will explode.
+    //
+    // BTW, we just try and cast it rather than using 'instanceof'
+    // because we don't know which subtype of ARCReader it will
+    // actually be.
+    try
+      {
+        ((ARCReader)this.reader).setParseHttpHeaders(true);
+        System.err.println( "set parse http headers" );
+      }
+    catch ( ClassCastException cce )
+      {
+        // Eat it.
+      }
   }
 
   /**
@@ -76,7 +96,7 @@ public class ArcReader implements Iterable<ArchiveRecordProxy>
     this.sizeLimit = sizeLimit;
   }
 
-  public long getSizeLimie( )
+  public long getSizeLimit( )
   {
     return this.sizeLimit;
   }
@@ -107,13 +127,6 @@ public class ArcReader implements Iterable<ArchiveRecordProxy>
     public ArchiveRecordProxyIterator( )
     {
       this.i = ArcReader.this.reader.iterator( );
-      
-      if ( ArcReader.this.reader instanceof ARCReader )
-        {
-          // Skip the first record, which is a "filedesc://"
-          // record describing the ARC file.
-          if ( this.i.hasNext( ) ) this.i.next( );
-        }
     }
 
     /**

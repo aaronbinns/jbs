@@ -1,20 +1,18 @@
 /*
- * This file is part of the archive-access tools project
- * (http://sourceforge.net/projects/archive-access).
- * 
- * The archive-access tools are free software; you can redistribute them and/or
- * modify them under the terms of the GNU Lesser Public License as published by
- * the Free Software Foundation; either version 2.1 of the License, or any
- * later version.
- * 
- * The archive-access tools are distributed in the hope that they will be
- * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser
- * Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser Public License along with
- * the archive-access tools; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.archive.jbs.arc;
@@ -35,7 +33,28 @@ import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.StatusLine;
 import org.apache.commons.httpclient.HttpParser;
 
-
+/**
+ * Proxy object for ARC and WARC records.  It reads the headers from
+ * either one and extracts out just the metadata we need for parsing.
+ * ARC records are mapped to the corresponding WARC record type.
+ *
+ * This is not a general purpose (W)ARC reading class.  It is tailored
+ * to the needs of jbs.Parse.
+ *
+ * A sizeLimit is passed to the constructor to limit the number of
+ * bytes that are read from the record body, to avoid blowing up the
+ * heapspace.  Some (W)ARC records can have 100+GB record bodies --
+ * for example video stream captures.
+ *
+ * Note that for HTTP response records, the 'length' field in the
+ * proxy object is the length of the *document*, that is the HTTP
+ * response *body*.  The length stored in the (W)ARC header includes
+ * the HTTP status line and headers, which we don't want.  What we
+ * want is the *document* length.
+ *
+ * For other record types, the length as given in the (W)ARC record
+ * header information.
+ */
 public class ArchiveRecordProxy
 {
   private String warcRecordType;
@@ -48,16 +67,13 @@ public class ArchiveRecordProxy
   private byte[] body;
 
   /**
-   * 
+   * Construct an ARCRecord proxy.  Read at most sizeLimit
+   * bytes from the record body.
    */
   public ArchiveRecordProxy( ARCRecord arc, long sizeLimit )
     throws IOException
   {
     ARCRecordMetaData header = (ARCRecordMetaData) arc.getHeader( );
-
-    // FIXME: Can arcs contain dns records?  Or other non-HTTP response types?
-    this.warcRecordType  = WARCConstants.RESPONSE;
-    this.warcContentType = WARCConstants.HTTP_RESPONSE_MIMETYPE;
 
     this.url    = header.getUrl();
     // No digest until after the record is fully read.
@@ -65,14 +81,38 @@ public class ArchiveRecordProxy
     this.length = header.getLength();
     this.code   = header.getStatusCode();
 
-    this.body = readBytes( arc, this.length, sizeLimit );
+    // Move the file position past the HTTP headers to the start of
+    // the HTTP response body.  We can't use the
+    // ARCRecord.skipHttpHeader() method because it only works if the
+    // ARCRecord is constructed in a particular manner, and it looks
+    // like it's broken in this case.
+    if ( url.startsWith( "http" ) )
+      {
+        this.warcRecordType  = WARCConstants.RESPONSE;
+        this.warcContentType = WARCConstants.HTTP_RESPONSE_MIMETYPE;
+
+        arc.skipHttpHeader();
+        this.length = arc.available();
+        this.body = readBytes( arc, this.length, sizeLimit );
+      }
+    else if ( url.startsWith( "filedesc" ) )
+      {
+        this.warcRecordType  = WARCConstants.WARCINFO;
+        this.warcContentType = "application/arcinfo";
+      }
+    else
+      {
+        throw new IOException( "Unknown ARC record type: " + url );
+      }
+
     // Must "close" the record to complete the digest computation.
     arc.close();
     this.digest = "sha1:" + arc.getDigestStr();
   }
 
   /**
-   * 
+   * Construct an WARCRecord proxy.  Read at most sizeLimit
+   * bytes from the record body.
    */
   public ArchiveRecordProxy( WARCRecord warc, long sizeLimit )
     throws IOException
@@ -107,7 +147,7 @@ public class ArchiveRecordProxy
         Header[] headers = HttpParser.parseHeaders( warc, "utf-8" );
 
         // The length of the HTTP response body is equal to the number
-        // of types remaining in the WARC record.q
+        // of types remaining in the WARC record.
         this.length = warc.available();
 
         this.body = readBytes( warc, this.length, sizeLimit );
@@ -148,8 +188,11 @@ public class ArchiveRecordProxy
     //       not over-ride it, it won't do the digesting on it.  Must use either
     //       read(byte[],offset,length) or read().
     int pos = 0;
-    while ( (pos += record.read( bytes, pos, (bytes.length - pos) )) < bytes.length )
-      ;
+    int c   = 0;
+    while ( ((c = record.read( bytes, pos, (bytes.length - pos) )) != -1) && pos < bytes.length )
+      {
+        pos += c;
+      }
     
     // Now that the bytes[] buffer has been filled, read the remainder
     // of the record so that the digest is computed over the entire
