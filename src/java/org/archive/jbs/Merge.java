@@ -181,7 +181,7 @@ public class Merge extends Configured implements Tool
         }
       else if ( value instanceof ParseText )
         {
-          doc.set( "content_parsed", value.toString() );
+          doc.set( "content", value.toString() );
         }
       else
         {

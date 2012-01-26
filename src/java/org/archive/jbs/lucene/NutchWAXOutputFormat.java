@@ -45,6 +45,12 @@ public class NutchWAXOutputFormat extends LuceneOutputFormat
     protected LuceneDocumentWriter buildDocumentWriter( JobConf job, IndexWriter indexer )
     throws IOException
   {
+    // This configuration propery must be set to an actual file,
+    // otherwise the Nutch CommonGrams class explodes (which is
+    // invoked by the NutchDocumentAnalyzer).  This empty
+    // "common-terms.utf8" file is bundled into the JBs .jar file.
+    job.set( "analysis.common.terms.file", "common-terms.utf8" );
+
     Analyzer analyzer = new org.apache.nutch.analysis.NutchDocumentAnalyzer( job );
 
     LuceneDocumentWriter writer = new LuceneDocumentWriter( indexer, analyzer );
@@ -68,8 +74,8 @@ public class NutchWAXOutputFormat extends LuceneOutputFormat
     handlers.put( "length"     , new SimpleFieldHandler( "length",      Field.Store.YES, Field.Index.NO ) );
     handlers.put( "collection" , new SimpleFieldHandler( "collection",  Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
     handlers.put( "code"       , new SimpleFieldHandler( "code",        Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
-    handlers.put( "content"    , new TextHandler( "content", "content_parsed", textMaxLength ) );
-    handlers.put( "boiled"     , new TextHandler( "boiled" ,                   textMaxLength ) );
+    handlers.put( "content"    , new TextHandler( "content", textMaxLength ) );
+    handlers.put( "boiled"     , new TextHandler( "boiled" , textMaxLength ) );
     handlers.put( "date"       , new DateHandler( ) );
     handlers.put( "site"       , new NutchWAXSiteHandler( ) );
     handlers.put( "type"       , new TypeHandler( normalizer ) );  

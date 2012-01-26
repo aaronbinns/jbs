@@ -302,7 +302,7 @@ public class Parse extends Configured implements Tool
                       doc.addLink( outlink.getToUrl( ), outlink.getAnchor( ) );
                     }
                   
-                  doc.set( "content_parsed", parsedText );
+                  doc.set( "content", parsedText );
                   
                   // Emit JSON string
                   output.collect( key, new Text( doc.toString() ) );

@@ -161,8 +161,8 @@ public class LuceneOutputFormat extends FileOutputFormat<Text, Text>
     handlers.put( "length"     , new SimpleFieldHandler( "length",      Field.Store.YES, Field.Index.NO ) );
     handlers.put( "collection" , new SimpleFieldHandler( "collection",  Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
     handlers.put( "code"       , new SimpleFieldHandler( "code",        Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
-    handlers.put( "content"    , new TextHandler( "content", "content_parsed", textMaxLength ) );
-    handlers.put( "boiled"     , new TextHandler( "boiled" ,                   textMaxLength ) );
+    handlers.put( "content"    , new TextHandler( "content", textMaxLength ) );
+    handlers.put( "boiled"     , new TextHandler( "boiled" , textMaxLength ) );
     handlers.put( "date"       , new DateHandler( ) );
     handlers.put( "site"       , new SiteHandler( idnHelper ) );
     handlers.put( "type"       , new TypeHandler( normalizer ) );  
