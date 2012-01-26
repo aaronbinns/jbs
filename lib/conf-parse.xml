@@ -78,7 +78,7 @@
   
   <property>
     <name>plugin.includes</name>
-    <value>parse-(pdf2|tika|text|html)|html-decorator</value>
+    <value>parse-(html2|pdf2|text|tika)|html-decorator</value>
   </property>
 
   <property>
@@ -105,11 +105,9 @@
   </property>
   
   <property>
+    <description>HTML Parser implementation. Currently the following keywords are recognized: "neko" uses NekoHTML, "tagsoup" uses TagSoup.</description>
     <name>parser.html.impl</name>
-    <value>tagsoup</value>
-    <description>HTML Parser implementation. Currently the following keywords
-    are recognized: "neko" uses NekoHTML, "tagsoup" uses TagSoup.
-    </description>
+    <value>neko</value>
   </property>
   
   <property>
