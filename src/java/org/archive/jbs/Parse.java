@@ -29,42 +29,27 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.FileOutputFormat;
-import org.apache.hadoop.mapred.FileSplit;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.JobStatus;
-import org.apache.hadoop.mapred.MapFileOutputFormat;
-import org.apache.hadoop.mapred.SequenceFileOutputFormat;
 import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
-import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.RunningJob;
-import org.apache.hadoop.mapred.lib.MultipleSequenceFileOutputFormat;
-import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
 import org.apache.nutch.metadata.Metadata;
-import org.apache.nutch.metadata.Nutch;
-import org.apache.nutch.net.URLFilterException;
-import org.apache.nutch.net.URLFilters;
 import org.apache.nutch.parse.Outlink;
-//import org.apache.nutch.parse.Parse;
+//import org.apache.nutch.parse.Parse;  // Don't import due to name conflict.
 import org.apache.nutch.parse.ParseData;
-import org.apache.nutch.parse.ParseImpl;
 import org.apache.nutch.parse.ParseResult;
 import org.apache.nutch.parse.ParseStatus;
 import org.apache.nutch.parse.ParseText;
 import org.apache.nutch.parse.ParseUtil;
 import org.apache.nutch.protocol.Content;
-import org.apache.nutch.util.NutchConfiguration;
-import org.apache.nutch.util.NutchJob;
 
 import org.archive.io.warc.WARCConstants;
 
@@ -144,7 +129,7 @@ public class Parse extends Configured implements Tool
                   doc.set( "digest", record.getDigest() );
                   doc.set( "date",   record.getDate() );
                   
-                  output.collect( key, new Text( doc.toString() ) );
+                  output.collect( docKey, new Text( doc.toString() ) );
                  }
               else 
                 {
