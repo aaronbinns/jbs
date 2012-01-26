@@ -98,6 +98,8 @@ public class Parse extends Configured implements Tool
           fis = FileSystem.get(this.jobConf).open( new Path( path ) );
 
           ArcReader reader = new ArcReader( path, fis );
+
+          reader.setSizeLimit( jobConf.getInt( "jbs.parse.content.limit", -1 ) );
           
           for ( ArchiveRecordProxy record : reader )
             {

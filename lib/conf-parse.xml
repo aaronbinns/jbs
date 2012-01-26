@@ -9,12 +9,6 @@
   
   <!-- ================================================== -->
   <!-- jbs.Parse config properties. -->
-  <!-- This specifies a limit on the size of a document parsed.
-  -->
-  <property>
-    <name>jbs.parse.content.limit</name>
-    <value>-1</value>
-  </property>
 
   <!-- This is *required* for NutchWAX to work.  Nutch expects to find
        its plugins on disk, not in the Hadoop .jar file.  This config
