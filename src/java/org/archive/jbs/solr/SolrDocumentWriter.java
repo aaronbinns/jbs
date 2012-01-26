@@ -96,7 +96,7 @@ public class SolrDocumentWriter extends DocumentWriterBase
       }
 
     // Document body, i.e the "content"
-    doc.addField( "content", document.get( "content_parsed" ) );
+    doc.addField( "content", document.get( "content" ) );
 
     // Solr requires the date to be in the form: 1995-12-31T23:59:59Z
     // See the Solr schema docs.
