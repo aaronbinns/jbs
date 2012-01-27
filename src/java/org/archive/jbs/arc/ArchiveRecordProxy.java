@@ -100,7 +100,12 @@ public class ArchiveRecordProxy
         this.warcRecordType  = WARCConstants.WARCINFO;
         this.warcContentType = "application/arcinfo";
       }
-    else
+    else if ( url.startsWith( "dns:" ) )
+      {
+        this.warcRecordType  = WARCConstants.RESPONSE;
+        this.warcContentType = "text/dns";
+      }
+    else 
       {
         throw new IOException( "Unknown ARC record type: " + url );
       }
