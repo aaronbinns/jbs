@@ -72,7 +72,6 @@ public class ArcReader implements Iterable<ArchiveRecordProxy>
     try
       {
         ((ARCReader)this.reader).setParseHttpHeaders(true);
-        System.err.println( "set parse http headers" );
       }
     catch ( ClassCastException cce )
       {
