@@ -91,6 +91,8 @@ public class Parse extends Configured implements Tool
       throws IOException
     {
       String path = key.toString();
+
+      LOG.info( "Start: "  + path );
       
       FSDataInputStream fis = null;
       try
@@ -152,10 +154,7 @@ public class Parse extends Configured implements Tool
         }
       finally
         {
-          if ( LOG.isInfoEnabled() ) 
-            {
-              LOG.info( "Completed ARC: "  + path );
-            }
+          LOG.info( "Finish: "  + path );
         }
     }
     
