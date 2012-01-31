@@ -56,6 +56,9 @@ import org.archive.io.warc.WARCConstants;
 import org.archive.jbs.arc.ArcReader;
 import org.archive.jbs.arc.ArchiveRecordProxy;
 
+import org.archive.jbs.util.FilenameInputFormat;
+import org.archive.jbs.util.PerMapOutputFormat;
+
 /**
  * Parse the contents of a (W)ARC file, output
  * in a JSON Document.
@@ -347,7 +350,7 @@ public class Parse extends Configured implements Tool
     job.setNumReduceTasks(0);
     
     // Use the Parse-specific output format.
-    job.setOutputFormat( ParseOutputFormat.class );
+    job.setOutputFormat( PerMapOutputFormat.class );
     
     // Use our ParseMapper, with output keys and values of type
     // Text.

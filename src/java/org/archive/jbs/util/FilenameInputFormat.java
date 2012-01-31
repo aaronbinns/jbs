@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package org.archive.jbs;
+package org.archive.jbs.util;
 
 import java.io.*;
 import java.util.*;
