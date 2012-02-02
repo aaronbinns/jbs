@@ -88,7 +88,7 @@ public class Parse extends Configured implements Tool
     /**
      * Read the records from the (w)arc file named in the
      * <code>key</code>, parse each record (if possible) and emit a
-     * JSON Document of the parsed record body.
+     * JSON Document for the parsed record body.
      */
     public void map( Text key, Text value, OutputCollector output, Reporter reporter )
       throws IOException
@@ -162,14 +162,9 @@ public class Parse extends Configured implements Tool
     }
     
     /**
-     * Parse an ARCRecord.
-     *
-     * @param record
-     * @param segmentName 
-     * @param output
-     * @return whether record was imported or not (i.e. filtered out due to URL filtering rules, etc.)
+     * 
      */
-    private boolean parseRecord( ArchiveRecordProxy record, OutputCollector output )
+    private void parseRecord( ArchiveRecordProxy record, OutputCollector output )
       throws IOException
     {
       String key = record.getUrl() + " " + record.getDigest( );
@@ -177,9 +172,6 @@ public class Parse extends Configured implements Tool
       try
         {
           Metadata contentMetadata = new Metadata();
-          
-          // We store both the normal URL and the URL+digest key for
-          // later retrieval by the indexing plugin(s).
           contentMetadata.set( "url",    record.getUrl()  );
           contentMetadata.set( "date",   record.getDate()     );
           contentMetadata.set( "digest", record.getDigest()   );
@@ -232,8 +224,6 @@ public class Parse extends Configured implements Tool
             }
           
           output( output, new Text( key ), content );
-          
-          return true;
         }
       catch ( Throwable t )
         {
@@ -243,8 +233,6 @@ public class Parse extends Configured implements Tool
           
           output.collect( key, new Text( doc.toString() ) );
         }
-      
-      return false;
     }
         
     /**
