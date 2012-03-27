@@ -460,9 +460,13 @@ public class Document
 
             Object o = json.get( name );
 
-            if ( o instanceof String )
+            if ( o instanceof String  ||
+                 o instanceof Long    ||
+                 o instanceof Double  ||
+                 o instanceof Integer ||
+                 o instanceof Boolean )
               {
-                this.add( name, (String) o );
+                this.add( name, o.toString() );
               }
             else if ( o instanceof JSONArray )
               {
