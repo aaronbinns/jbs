@@ -46,11 +46,10 @@ import org.apache.commons.httpclient.HttpParser;
  * heapspace.  Some (W)ARC records can have 100+GB record bodies --
  * for example video stream captures.
  *
- * Note that for HTTP response records, the 'length' field in the
- * proxy object is the length of the *document*, that is the HTTP
- * response *body*.  The length stored in the (W)ARC header includes
- * the HTTP status line and headers, which we don't want.  What we
- * want is the *document* length.
+ * Note that for HTTP response records, the 'length' field in this
+ * proxy object is the length of the the HTTP response *body*.  The
+ * length stored in the (W)ARC header includes the HTTP status line
+ * and headers, which we don't want.
  *
  * For other record types, the length as given in the (W)ARC record
  * header information.
@@ -81,17 +80,17 @@ public class ArchiveRecordProxy
     this.length = header.getLength();
     this.code   = header.getStatusCode();
 
-    // Move the file position past the HTTP headers to the start of
-    // the HTTP response body.  We can't use the
-    // ARCRecord.skipHttpHeader() method because it only works if the
-    // ARCRecord is constructed in a particular manner, and it looks
-    // like it's broken in this case.
     if ( url.startsWith( "http" ) )
       {
         this.warcRecordType  = WARCConstants.RESPONSE;
         this.warcContentType = WARCConstants.HTTP_RESPONSE_MIMETYPE;
 
+        // Move the file position past the HTTP headers to the start of
+        // the HTTP response body.
         arc.skipHttpHeader();
+        
+        // The length of the HTTP response body is equal to the number
+        // of bytes remaining in the arc record.
         this.length = arc.available();
         this.body = readBytes( arc, this.length, sizeLimit );
       }
@@ -163,7 +162,7 @@ public class ArchiveRecordProxy
    * Read the bytes of the record into a buffer and return the buffer.
    * Give a size limit to the buffer to prevent from exploding memory,
    * but still read all the bytes from the stream even if the buffer
-   * is full.  This was the file position will be advanced to the end
+   * is full.  This way, the file position will be advanced to the end
    * of the record.
    */
   private byte[] readBytes( ArchiveRecord record, long contentLength, long sizeLimit )

@@ -101,11 +101,11 @@ public class ArcReader implements Iterable<ArchiveRecordProxy>
   }
 
   /**
-   * Returns an iterator over <code>ARCRecord</code>s in the wrapped
-   * <code>ArchiveReader</code>, converting <code>WARCRecords</code>
-   * to <code>ARCRecords</code> on-the-fly.
+   * Returns an iterator over <code>ArchiveRecordProxy</code> objects,
+   * which wrap the <code>WARCRecord</code>/<code>ARCRecord</code>
+   * objects from the inner <code>ArchiveReader</code>.
    *
-   * @return an interator
+   * @return an iterator
    */
   public Iterator<ArchiveRecordProxy> iterator( )
   {
@@ -113,7 +113,7 @@ public class ArcReader implements Iterable<ArchiveRecordProxy>
   }
 
   /**
-   * 
+   * Iterator over ArchiveRecordProxy objects.
    */
   private class ArchiveRecordProxyIterator implements Iterator<ArchiveRecordProxy>
   {
@@ -168,8 +168,8 @@ public class ArcReader implements Iterable<ArchiveRecordProxy>
               return proxy;
             }
 
-          // If we get here then the record we reaad in was neither an ARC
-          // or WARC record.  What is a good exception to throw?
+          // If we get here then the record we read in was neither an
+          // ARC or WARC record.  What is a good exception to throw?
           throw new RuntimeException( "Record neither ARC nor WARC: " + record.getClass( ) );
         }
       catch ( IOException ioe )
@@ -177,6 +177,7 @@ public class ArcReader implements Iterable<ArchiveRecordProxy>
           throw new RuntimeException( ioe );
         }
     }
+
     /**
      * Unsupported optional operation.
      *
