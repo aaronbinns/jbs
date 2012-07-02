@@ -282,7 +282,7 @@ public class Parse extends Configured implements Tool
                   doc.set( "title", pd.getTitle( ) );
                   
                   Metadata meta = pd.getContentMeta( );
-                  for ( String name : new String[] { "url", "digest", "length", "code", "collection", "boiled", "date", "type", "keywords", "description" } )
+                  for ( String name : new String[] { "url", "digest", "length", "code", "collection", "boiled", "date", "type", "keywords", "subject", "description" } )
                     {
                       doc.set( name, meta.get( name ) );
                     }
