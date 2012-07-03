@@ -279,13 +279,15 @@ public class Parse extends Configured implements Tool
 
                   ParseData pd = parse.getData();
 
-                  doc.set( "title", pd.getTitle( ) );
-                  
+                  // Copy metadata fields.
                   Metadata meta = pd.getContentMeta( );
-                  for ( String name : new String[] { "url", "digest", "length", "code", "collection", "boiled", "date", "type", "keywords", "subject", "description" } )
+                  for ( String name : meta.names( ) )
                     {
                       doc.set( name, meta.get( name ) );
                     }
+                  
+                  // Ensure that the title comes from the ParseData.
+                  doc.set( "title", pd.getTitle( ) );
                   
                   for ( Outlink outlink : pd.getOutlinks( ) )
                     {
