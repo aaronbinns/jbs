@@ -223,7 +223,7 @@ public class Parse extends Configured implements Tool
                 }
             }
           
-          output( output, new Text( key ), content );
+          write( output, new Text( key ), content );
         }
       catch ( Throwable t )
         {
@@ -231,16 +231,16 @@ public class Parse extends Configured implements Tool
           doc.set( "status", "error" );
           doc.set( "errorMessage", "Failed to parse record: " + t.getMessage() );
           
-          output.collect( key, new Text( doc.toString() ) );
+          output.collect( new Text( key ), new Text( doc.toString() ) );
         }
     }
         
     /**
      * Writes the key and related content to the output collector.
      */
-    private void output( OutputCollector output,
-                         Text            key,
-                         Content         content )
+    private void write( OutputCollector output,
+                        Text            key,
+                        Content         content )
       throws IOException
     {
       ParseResult parseResult = null;
