@@ -174,7 +174,7 @@ public class ArchiveRecordProxy
   {
     int ch;
     int state = 0;
-    while ( (ch = warc.read() ) >= 0 && (state != 2) )
+    while ( (state != 2) && (ch = warc.read() ) >= 0 )
       {
         switch ( state )
           {
