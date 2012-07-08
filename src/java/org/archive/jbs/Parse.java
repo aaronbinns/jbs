@@ -150,7 +150,7 @@ public class Parse extends Configured implements Tool
         {
           LOG.error( "Error processing archive file: " + path, e );
           
-          if ( jobConf.getBoolean( "jbs.parse.abortOnArchiveReadError", false ) )
+          if ( jobConf.getBoolean( "jbs.parse.abortOnArchiveReadError", true ) )
             {
               throw new IOException( e );
             }
