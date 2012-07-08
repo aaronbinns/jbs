@@ -147,14 +147,50 @@ public class ArchiveRecordProxy
         StatusLine statusLine = new StatusLine( HttpParser.readLine( warc, "utf-8" ) );
         this.code = Integer.toString( statusLine.getStatusCode() );
         
-        // Slurp up the rest of the HTTP headers, discarding them.
-        Header[] headers = HttpParser.parseHeaders( warc, "utf-8" );
+        // Skip over the HTTP headers, we just want the body of the HTTP response.
+        skipHttpHeaders( warc );
 
         // The length of the HTTP response body is equal to the number
-        // of types remaining in the WARC record.
+        // of bytes remaining in the WARC record.
         this.length = warc.available();
 
         this.body = readBytes( warc, this.length, sizeLimit );
+      }
+  }
+
+  /**
+   * Skip over the HTTP headers.  We use a simple 3-state FSM to
+   * search for the byte sequence: \n( |\r)*\n
+   *
+   * Rather than use the Apache HttpParser.read* methods, I
+   * implemented this here to avoid any assumptions that class makes
+   * about character encoding.
+   *
+   * And for sure, avoid HttpParser.parseHeaders() as it is strict
+   * about the header format and will throw an exception if they are
+   * malformed.  We don't care, we just want to skip them.
+   */
+  private void skipHttpHeaders( WARCRecord warc ) throws IOException
+  {
+    int ch;
+    int state = 0;
+    while ( (ch = warc.read() ) >= 0 && (state != 2) )
+      {
+        switch ( state )
+          {
+          case 0:
+            if ( ch == '\n' ) state = 1;
+            break;
+            
+          case 1:
+            if ( ch == '\n' ) 
+              state = 2;
+            else if ( ch == '\r' || ch == ' ' )
+              state = 1;
+            else
+              state = 0;
+            break;
+          }
       }
   }
 
