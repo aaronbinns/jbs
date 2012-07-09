@@ -69,7 +69,7 @@ public class ArchiveRecordProxy
    * Construct an ARCRecord proxy.  Read at most sizeLimit
    * bytes from the record body.
    */
-  public ArchiveRecordProxy( ARCRecord arc, long sizeLimit )
+  public ArchiveRecordProxy( ARCRecord arc, int sizeLimit )
     throws IOException
   {
     ARCRecordMetaData header = (ARCRecordMetaData) arc.getHeader( );
@@ -77,7 +77,6 @@ public class ArchiveRecordProxy
     this.url    = header.getUrl();
     // No digest until after the record is fully read.
     this.date   = header.getDate();
-    this.length = header.getLength();
     this.code   = header.getStatusCode();
 
     if ( url.startsWith( "http" ) )
@@ -91,7 +90,7 @@ public class ArchiveRecordProxy
         
         // The length of the HTTP response body is equal to the number
         // of bytes remaining in the arc record.
-        this.length = arc.available();
+        this.length = header.getLength() - arc.getPosition();
         this.body = readBytes( arc, this.length, sizeLimit );
       }
     else if ( url.startsWith( "filedesc" ) )
@@ -118,7 +117,7 @@ public class ArchiveRecordProxy
    * Construct an WARCRecord proxy.  Read at most sizeLimit
    * bytes from the record body.
    */
-  public ArchiveRecordProxy( WARCRecord warc, long sizeLimit )
+  public ArchiveRecordProxy( WARCRecord warc, int sizeLimit )
     throws IOException
   {
     ArchiveRecordHeader header = warc.getHeader( );
@@ -152,7 +151,7 @@ public class ArchiveRecordProxy
 
         // The length of the HTTP response body is equal to the number
         // of bytes remaining in the WARC record.
-        this.length = warc.available();
+        this.length = header.getLength() - warc.getPosition();
 
         this.body = readBytes( warc, this.length, sizeLimit );
       }
@@ -201,22 +200,15 @@ public class ArchiveRecordProxy
    * is full.  This way, the file position will be advanced to the end
    * of the record.
    */
-  private byte[] readBytes( ArchiveRecord record, long contentLength, long sizeLimit )
+  private byte[] readBytes( ArchiveRecord record, long contentLength, int sizeLimit )
     throws IOException
   {
     // Ensure the record does strict reading.
     record.setStrict( true );
 
-    if ( sizeLimit < 0 )
-      {
-        sizeLimit = contentLength;
-      }
-    else
-      {
-        sizeLimit = Math.min( sizeLimit, contentLength );
-      }
+    sizeLimit = (int) Math.min( Integer.MAX_VALUE, contentLength );
 
-    byte[] bytes = new byte[(int) sizeLimit];
+    byte[] bytes = new byte[sizeLimit];
 
     if ( sizeLimit == 0 )
       {
@@ -238,7 +230,7 @@ public class ArchiveRecordProxy
     // of the record so that the digest is computed over the entire
     // content.
     byte[] buf = new byte[1024 * 1024];
-    int count = 0;
+    long count = 0;
     while ( record.available( ) > 0 )
       {
         count += record.read( buf, 0, Math.min( buf.length, record.available( ) ) );

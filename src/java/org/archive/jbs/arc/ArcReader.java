@@ -49,7 +49,7 @@ import org.apache.commons.httpclient.Header;
 public class ArcReader implements Iterable<ArchiveRecordProxy>
 {
   private ArchiveReader reader;
-  private long sizeLimit = -1;
+  private int sizeLimit = -1;
 
   /**
    * Construct an <code>ArchiveReader</code> with the
@@ -90,12 +90,12 @@ public class ArcReader implements Iterable<ArchiveRecordProxy>
     this.reader = reader;
   }
 
-  public void setSizeLimit( long sizeLimit )
+  public void setSizeLimit( int sizeLimit )
   {
     this.sizeLimit = sizeLimit;
   }
 
-  public long getSizeLimit( )
+  public int getSizeLimit( )
   {
     return this.sizeLimit;
   }
