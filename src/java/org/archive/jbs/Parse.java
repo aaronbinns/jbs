@@ -361,11 +361,12 @@ public class Parse extends Configured implements Tool
             Path outputPath = new Path( outputDir, inputPath.getName() );
             if ( fs.exists( outputPath ) )
               {
-                LOG.warn( "Output path already exists: " + outputPath );
+                LOG.debug( "Output path already exists: " + outputPath );
               }
             else
               {
                 atLeastOneInput = true;
+                LOG.info( "Add input path: " + inputPath );
                 FileInputFormat.addInputPath( job, inputPath );
               }
           }
