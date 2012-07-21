@@ -72,7 +72,6 @@ public class NutchWAXOutputFormat extends LuceneOutputFormat
     handlers.put( "keywords"   , new SimpleFieldHandler( "keywords",    Field.Store.YES, Field.Index.ANALYZED ) );
     handlers.put( "description", new SimpleFieldHandler( "description", Field.Store.YES, Field.Index.ANALYZED ) );
     handlers.put( "length"     , new SimpleFieldHandler( "length",      Field.Store.YES, Field.Index.NO ) );
-    handlers.put( "collection" , new SimpleFieldHandler( "collection",  Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
     handlers.put( "code"       , new SimpleFieldHandler( "code",        Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
     handlers.put( "content"    , new TextHandler( "content", textMaxLength ) );
     handlers.put( "boiled"     , new TextHandler( "boiled" , textMaxLength ) );
@@ -80,6 +79,12 @@ public class NutchWAXOutputFormat extends LuceneOutputFormat
     handlers.put( "site"       , new NutchWAXSiteHandler( ) );
     handlers.put( "type"       , new TypeHandler( normalizer ) );  
     handlers.put( "boost"      , new BoostHandler( ) );
+
+    String collection = job.get( "jbs.lucene.collection", null );
+    if ( collection == null )
+      handlers.put( "collection", new SimpleFieldHandler( "collection", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
+    else
+      handlers.put( "collection", new FixedValueFieldHandler( "collection", collection, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS ) );
 
     writer.setHandlers( handlers );
     
