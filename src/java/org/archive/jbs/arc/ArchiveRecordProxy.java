@@ -143,7 +143,22 @@ public class ArchiveRecordProxy
     // headers so that the file position is at the response body
     if ( WARCConstants.HTTP_RESPONSE_MIMETYPE.equals( this.warcContentType ) )
       {
-        StatusLine statusLine = new StatusLine( HttpParser.readLine( warc, "utf-8" ) );
+        // Sometimes an HTTP response will have whitespace (such as
+        // blank lines) before the actual HTTP status line like:
+        //   [blank]
+        //   HTTP/1.0 200 OK
+        // so we have to gobble them up.
+        String line;
+        while ( (line = HttpParser.readLine( warc, "utf-8" )) != null )
+          {
+            line = line.trim();
+
+            // If a non-empty line, break out of the loop
+            if ( line.length() != 0 ) break;              
+          }
+
+        // Now get on with parsing the status line.
+        StatusLine statusLine = new StatusLine( line );
         this.code = Integer.toString( statusLine.getStatusCode() );
         
         // Skip over the HTTP headers, we just want the body of the HTTP response.
