@@ -32,6 +32,7 @@ import org.archive.io.warc.WARCRecord;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.StatusLine;
 import org.apache.commons.httpclient.HttpParser;
+import org.apache.commons.httpclient.HttpException;
 
 /**
  * Proxy object for ARC and WARC records.  It reads the headers from
@@ -153,13 +154,27 @@ public class ArchiveRecordProxy
           {
             line = line.trim();
 
-            // If a non-empty line, break out of the loop
-            if ( line.length() != 0 ) break;              
-          }
+            // If an empty line, or an invalid HTTP-status line: skip it!
+            if ( line.length() == 0 ) continue ;
+            if ( ! line.startsWith( "HTTP" ) ) continue;
 
-        // Now get on with parsing the status line.
-        StatusLine statusLine = new StatusLine( line );
-        this.code = Integer.toString( statusLine.getStatusCode() );
+            try
+              {
+                // Now get on with parsing the status line.
+                StatusLine statusLine = new StatusLine( line );
+                this.code = Integer.toString( statusLine.getStatusCode() );
+              }
+            catch ( HttpException e )
+              {
+                // The line started with "HTTP", but was not a full,
+                // valid HTTP-Status line.  Assume that we won't see
+                // one, so break out of the loop.
+                // But first, set the HTTP code to a value indicating
+                // there was no valid HTTP code.
+                this.code = "";
+                break;
+              }
+          }
         
         // Skip over the HTTP headers, we just want the body of the HTTP response.
         skipHttpHeaders( warc );
