@@ -200,7 +200,7 @@ public class Parse extends Configured implements Tool
               
               try
                 {
-                  if ( jobConf.getBoolean( "jbs.parse.boilerpipe", false ) )
+                  if ( jobConf.getBoolean( "jbs.parse.boilerpipe", true ) )
                     {
                       // BoilerPipe!
                       contentMetadata.set( "boiled", de.l3s.boilerpipe.extractors.DefaultExtractor.INSTANCE.getText( new org.xml.sax.InputSource( new java.io.ByteArrayInputStream( record.getHttpResponseBody() ) ) ) );
