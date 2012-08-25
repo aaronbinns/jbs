@@ -163,6 +163,7 @@ public class ArchiveRecordProxy
                 // Now get on with parsing the status line.
                 StatusLine statusLine = new StatusLine( line );
                 this.code = Integer.toString( statusLine.getStatusCode() );
+                break;
               }
             catch ( HttpException e )
               {
