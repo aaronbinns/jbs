@@ -91,7 +91,12 @@ public class ArchiveRecordProxy
         
         // The length of the HTTP response body is equal to the number
         // of bytes remaining in the arc record.
+        // UNLESS the HTTP response body is empty, in which case the
+        // arc.getPosition() is already one byte past the
+        // header.getLength().
         this.length = header.getLength() - arc.getPosition();
+        if ( this.length == -1 ) this.length = 0;
+
         this.body = readBytes( arc, this.length, sizeLimit );
       }
     else if ( url.startsWith( "filedesc" ) )
@@ -237,16 +242,7 @@ public class ArchiveRecordProxy
     // Ensure the record does strict reading.
     record.setStrict( true );
 
-    // FIXME: There seems to be a bug in the OpenJDK 7.0 (7.0_02-b13
-    //        at least) where computing a SHA-1 digest over a byte
-    //        buffer close to Integer.MAX_VALUE in size triggers a
-    //        core-dump in the JVM.  Experiments show that
-    //        (Integer.MAX_VALUE-10) is the edge where core dumps
-    //        happen..anything larger than that value.
-    //
-    //        So, even though MAX_VALUE-11 seems safe, we'll back it
-    //        off a full 1024 bytes, just in case.
-    sizeLimit = (int) Math.min( (Integer.MAX_VALUE-1024), contentLength );
+    sizeLimit = (int) Math.min( sizeLimit, contentLength );
 
     byte[] bytes = new byte[sizeLimit];
 

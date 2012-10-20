@@ -49,7 +49,9 @@ import org.apache.commons.httpclient.Header;
 public class ArcReader implements Iterable<ArchiveRecordProxy>
 {
   private ArchiveReader reader;
-  private int sizeLimit = -1;
+
+  // NOTE: See the setSizeLimit() method for details.
+  private int sizeLimit = Integer.MAX_VALUE - 1024;
 
   /**
    * Construct an <code>ArchiveReader</code> with the
@@ -90,9 +92,34 @@ public class ArcReader implements Iterable<ArchiveRecordProxy>
     this.reader = reader;
   }
 
+  /**
+   * Limit the amount of bytes read from the archive record to prevent
+   * exceeding the available heap size.  By default, the limit is 2GB,
+   * which is the maxiumum size allowed.  The limit is 2GB because we
+   * load the content into a byte[].
+   *
+   * Giving a negative value means the same thing as "the maximum
+   * allowed value".
+   *
+   * FIXME: There seems to be a bug in the OpenJDK 7.0 (7.0_02-b13 at
+   * least) where computing a SHA-1 digest over a byte buffer close to
+   * Integer.MAX_VALUE in size triggers a core-dump in the JVM.
+   * Experiments show that (Integer.MAX_VALUE-10) is the edge where
+   * core dumps happen..anything larger than that value.
+   *
+   * So, even though MAX_VALUE-11 seems safe, we'll back it off a full
+   * 1024 bytes, just in case.
+   */
   public void setSizeLimit( int sizeLimit )
   {
-    this.sizeLimit = sizeLimit;
+    if ( sizeLimit < 0 || sizeLimit > (Integer.MAX_VALUE - 1024) )
+      {
+        this.sizeLimit = Integer.MAX_VALUE - 1024;
+      }
+    else
+      {
+        this.sizeLimit = sizeLimit;
+      }
   }
 
   public int getSizeLimit( )
