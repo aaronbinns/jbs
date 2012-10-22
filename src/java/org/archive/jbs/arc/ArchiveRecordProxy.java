@@ -82,7 +82,7 @@ public class ArchiveRecordProxy
 
     if ( url.startsWith( "http" ) )
       {
-        this.warcRecordType  = WARCConstants.RESPONSE;
+        this.warcRecordType  = WARCConstants.WARCRecordType.RESPONSE.toString();
         this.warcContentType = WARCConstants.HTTP_RESPONSE_MIMETYPE;
 
         // Move the file position past the HTTP headers to the start of
@@ -101,12 +101,12 @@ public class ArchiveRecordProxy
       }
     else if ( url.startsWith( "filedesc" ) )
       {
-        this.warcRecordType  = WARCConstants.WARCINFO;
+        this.warcRecordType  = WARCConstants.WARCRecordType.WARCINFO.toString();
         this.warcContentType = "application/arcinfo";
       }
     else if ( url.startsWith( "dns:" ) )
       {
-        this.warcRecordType  = WARCConstants.RESPONSE;
+        this.warcRecordType  = WARCConstants.WARCRecordType.RESPONSE.toString();
         this.warcContentType = "text/dns";
       }
     else 
