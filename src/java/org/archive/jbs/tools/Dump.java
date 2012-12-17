@@ -71,7 +71,11 @@ public class Dump extends Configured implements Tool
 
         while ( mapReader.next(key, value))
           {
-            System.out.println( "[" + key + "] [" + value + "]" );
+            System.out.print( "[" );
+            System.out.print( key );
+            System.out.print( "] [" );
+            System.out.print( value );
+            System.out.println( "]" );
           }
       }
     else
@@ -92,7 +96,11 @@ public class Dump extends Configured implements Tool
 
         while ( seqReader.next(key, value))
           {
-            System.out.println( "[" + key + "] [" + value + "]" );
+            System.out.print( "[" );
+            System.out.print( key );
+            System.out.print( "] [" );
+            System.out.print( value );
+            System.out.println( "]" );
           }
       }
 
