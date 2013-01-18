@@ -43,14 +43,17 @@ public class DateHandler implements FieldHandler
   {
     for ( String date : document.getAll( "date" ) )
       {
-        if ( date.length() >= "yyyymm".length( ) )
+        // Store, but do not index, the full date.
+        luceneDocument.add( new Field( "date", date, Field.Store.YES, Field.Index.NO  ) );
+
+        // Index, but do not store, the year and the year+month.  These are what can be searched.
+        if ( date.length() >= 6 )
           {
-            // Store, but do not index, the full date.
-            luceneDocument.add( new Field( "date", date, Field.Store.YES, Field.Index.NO  ) );
-            
-            // Index, but do not store, the year and the year+month.  These are what can be searched.
-            luceneDocument.add( new Field( "date", date.substring( 0, 4 ), Field.Store.NO,  Field.Index.NOT_ANALYZED_NO_NORMS ) );
             luceneDocument.add( new Field( "date", date.substring( 0, 6 ), Field.Store.NO,  Field.Index.NOT_ANALYZED_NO_NORMS ) );
+          }
+        if ( date.length() >= 4 )
+          {
+            luceneDocument.add( new Field( "date", date.substring( 0, 4 ), Field.Store.NO,  Field.Index.NOT_ANALYZED_NO_NORMS ) );
           }
       }
   }
