@@ -32,9 +32,9 @@ import org.archive.jbs.Document;
  * whitespace-separated list of 14-digit date values.  That value is
  * tokenized, and converted to a list of date values.
  *
- * The full 14-digit value is stored, but not indexed.  Then the date
- * is added as a Lucene field multiple times, with different
- * precisions: YYYY and YYYYMM.  These shortened forms are not stored.
+ * The full date value is stored, but not indexed.  Then the date is
+ * added as a Lucene field multiple times, with different precisions:
+ * YYYY and YYYYMM.  These shortened forms are not stored.
  */
 public class DateHandler implements FieldHandler
 {
@@ -43,9 +43,9 @@ public class DateHandler implements FieldHandler
   {
     for ( String date : document.getAll( "date" ) )
       {
-        if ( date.length() == "yyyymmddhhmmss".length( ) )
+        if ( date.length() >= "yyyymm".length( ) )
           {
-            // Store, but do not index, the full 14-character date.
+            // Store, but do not index, the full date.
             luceneDocument.add( new Field( "date", date, Field.Store.YES, Field.Index.NO  ) );
             
             // Index, but do not store, the year and the year+month.  These are what can be searched.
