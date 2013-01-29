@@ -100,7 +100,7 @@ public class Parse extends Configured implements Tool
       FSDataInputStream fis = null;
       try
         {
-          fis = FileSystem.get(this.jobConf).open( new Path( path ) );
+          fis = FileSystem.get( new java.net.URI( path ), this.jobConf ).open( new Path( path ) );
 
           ArcReader reader = new ArcReader( path, fis );
 
@@ -355,7 +355,9 @@ public class Parse extends Configured implements Tool
     boolean atLeastOneInput = false;
     for ( int i = 1 ; i < args.length ; i++ )
       {
-        for ( FileStatus status : fs.globStatus( new Path( args[i] ) ) )
+        FileSystem inputfs = FileSystem.get( new java.net.URI( args[i] ), getConf() );
+
+        for ( FileStatus status : inputfs.globStatus( new Path( args[i] ) ) )
           {
             Path inputPath  = status.getPath();
             Path outputPath = new Path( outputDir, inputPath.getName() );
