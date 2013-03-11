@@ -109,6 +109,22 @@ public class ArchiveRecordProxy
         this.warcRecordType  = WARCConstants.WARCRecordType.RESPONSE.toString();
         this.warcContentType = "text/dns";
       }
+    else if ( url.startsWith( "ftp:" ) )
+      {
+        this.warcRecordType  = WARCConstants.WARCRecordType.RESOURCE.toString();
+        this.warcContentType = "application/octet-stream";
+
+        // HACK: We set a bogus HTTP status code 200 here because
+        //       later in the indexing workflow, non-200 codes are
+        //       filtered out so that we don't index 404 pages and
+        //       such.
+        this.code = "200";
+
+        this.length = header.getLength() - arc.getPosition();
+        if ( this.length == -1 ) this.length = 0;
+
+        this.body = readBytes( arc, this.length, sizeLimit );
+      }
     else 
       {
         throw new IOException( "Unknown ARC record type: " + url );
@@ -191,6 +207,26 @@ public class ArchiveRecordProxy
 
         this.body = readBytes( warc, this.length, sizeLimit );
       }
+    else if ( WARCConstants.WARCRecordType.RESOURCE.toString().equals( this.warcRecordType ) 
+              &&
+              // We check for "ftp://" here because we don't want to waste the time to copy the
+              // bytes for resource record types we don't care about.  If we want to pass along
+              // all resource records, simply remove this check.
+              this.url.startsWith( "ftp://" ) )
+      {
+        // HACK: We set a bogus HTTP status code 200 here because
+        //       later in the indexing workflow, non-200 codes are
+        //       filtered out so that we don't index 404 pages and
+        //       such.
+        this.code = "200";
+        
+        // The length of the FTP response body is equal to the number
+        // of bytes remaining in the WARC record.
+        this.length = header.getLength() - warc.getPosition();
+
+        this.body = readBytes( warc, this.length, sizeLimit );
+      }
+             
   }
 
   /**

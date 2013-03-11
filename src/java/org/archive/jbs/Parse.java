@@ -122,6 +122,21 @@ public class Parse extends Configured implements Tool
                       LOG.info( "Skip response: " + record.getUrl() + " response-type:" + record.getWARCContentType() + " date: " + record.getDate() );
                     }
                 }
+              else if ( WARCConstants.WARCRecordType.RESOURCE.toString().equals( record.getWARCRecordType() ) )
+                {
+                  // We only care about "ftp://" resource records.  It's possible that the ArchiveRecordProxy will
+                  // pass us resource records other than ftp, so we filter out non-ftp ones here.
+                  if ( record.getUrl().startsWith( "ftp://" ) )
+                    {
+                      LOG.info( "Process resource: " + record.getUrl() + " digest:" + record.getDigest() + " date: " + record.getDate() );
+
+                      parseRecord( record, output );
+                    }
+                  else
+                    {
+                      LOG.info( "Skip resource: " + record.getUrl() + " response-type:" + record.getWARCContentType() + " date: " + record.getDate() );
+                    }
+                }
               else if ( WARCConstants.WARCRecordType.REVISIT.toString().equals( record.getWARCRecordType() ) )
                 {
                   // If this is a revisit record, just create a JSON
@@ -172,7 +187,7 @@ public class Parse extends Configured implements Tool
       try
         {
           Metadata contentMetadata = new Metadata();
-          contentMetadata.set( "url",    record.getUrl()  );
+          contentMetadata.set( "url",    record.getUrl()      );
           contentMetadata.set( "date",   record.getDate()     );
           contentMetadata.set( "digest", record.getDigest()   );
           contentMetadata.set( "length", String.valueOf( record.getLength() ) );
