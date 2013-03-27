@@ -29,7 +29,6 @@ import org.archive.io.arc.ARCRecordMetaData;
 import org.archive.io.warc.WARCConstants;
 import org.archive.io.warc.WARCRecord;
 
-import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.StatusLine;
 import org.apache.commons.httpclient.HttpParser;
 import org.apache.commons.httpclient.HttpException;

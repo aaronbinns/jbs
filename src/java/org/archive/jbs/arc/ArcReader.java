@@ -36,8 +36,6 @@ import org.archive.io.arc.ARCRecordMetaData;
 import org.archive.io.warc.WARCConstants;
 import org.archive.io.warc.WARCRecord;
 
-import org.apache.commons.httpclient.Header;
-
 /**
  * Convenience wrapper around the (W)ARC readers which allows for
  * simple iteration through an (W)ARC file, returning a series of
