@@ -247,7 +247,7 @@ public class ArcReader implements Iterable<ArchiveRecordProxy>
             System.out.print( rec.getDate()   + " " );
             System.out.print( rec.getLength() + " " );
             System.out.print( rec.getHttpStatusCode() );
-            System.out.print( rec.getHttpResponseBody().length );
+            System.out.print( rec.getHttpResponseBody() != null ? rec.getHttpResponseBody().length : 0 );
             System.out.println( );
            }
       }
