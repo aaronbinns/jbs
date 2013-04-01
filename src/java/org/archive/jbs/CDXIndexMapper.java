@@ -47,6 +47,8 @@ import org.archive.wayback.resourceindex.cdx.format.CDXFormatException;
 import org.archive.wayback.resourcestore.indexer.ArcIndexer;
 import org.archive.wayback.resourcestore.indexer.IndexWorker;
 import org.archive.wayback.resourcestore.indexer.WarcIndexer;
+import org.archive.wayback.util.url.KeyMakerUrlCanonicalizer;
+import org.archive.wayback.UrlCanonicalizer;
 
 
 public class CDXIndexMapper extends MapReduceBase implements Mapper<Text, Text, Text, Text>
@@ -61,6 +63,12 @@ public class CDXIndexMapper extends MapReduceBase implements Mapper<Text, Text, 
   public void configure( JobConf job )
   {
     this.job = job;
+
+    // Default is "classic" style, not surt.
+    boolean surt = this.job.getBoolean( "jbs.cdx.surt", false );
+
+    this.arcIndexer .setCanonicalizer( new KeyMakerUrlCanonicalizer( surt ) );
+    this.warcIndexer.setCanonicalizer( new KeyMakerUrlCanonicalizer( surt ) );
   }
 
   public CloseableIterator<CaptureSearchResult> indexFile( String path, InputStream is )
@@ -114,7 +122,10 @@ public class CDXIndexMapper extends MapReduceBase implements Mapper<Text, Text, 
       }
     catch ( Exception e )
       {
-        
+        if ( this.job.getBoolean( "jbs.cdx.abortOnArchiveReadError", true ) )
+          {
+            throw new IOException( e );
+          }
       }
     finally 
       {
