@@ -227,11 +227,14 @@ public class Parse extends Configured implements Tool
         }
       catch ( Throwable t )
         {
-          Document doc = new Document();
-          doc.set( "status", "error" );
-          doc.set( "errorMessage", "Failed to parse record: " + t.getMessage() );
-          
-          output.collect( new Text( key ), new Text( doc.toString() ) );
+          if ( jobConf.getBoolean( "jbs.parse.emitParseErrorRecords", true ) )
+            {
+              Document doc = new Document();
+              doc.set( "status", "error" );
+              doc.set( "errorMessage", "Failed to parse record: " + t.getMessage() );
+              
+              output.collect( new Text( key ), new Text( doc.toString() ) );
+            }
         }
     }
         
@@ -250,11 +253,14 @@ public class Parse extends Configured implements Tool
         }
       catch ( Throwable t )
         {
-          Document doc = new Document();
-          doc.set( "status", "error" );
-          doc.set( "errorMessage", "Failed to parse record: " + t.getMessage() );
-          
-          output.collect( key, new Text( doc.toString() ) );
+          if ( jobConf.getBoolean( "jbs.parse.emitParseErrorRecords", true ) )
+            {
+              Document doc = new Document();
+              doc.set( "status", "error" );
+              doc.set( "errorMessage", "Failed to parse record: " + t.getMessage() );
+              
+              output.collect( key, new Text( doc.toString() ) );
+            }
         }
       
       try
@@ -289,11 +295,15 @@ public class Parse extends Configured implements Tool
                   // Ensure that the title comes from the ParseData.
                   doc.set( "title", pd.getTitle( ) );
                   
-                  for ( Outlink outlink : pd.getOutlinks( ) )
+                  // Optionally skip the outlinks.
+                  if ( jobConf.getBoolean( "jbs.parse.emitOutlinks", true ) )
                     {
-                      doc.addLink( outlink.getToUrl( ), outlink.getAnchor( ) );
+                      for ( Outlink outlink : pd.getOutlinks( ) )
+                        {
+                          doc.addLink( outlink.getToUrl( ), outlink.getAnchor( ) );
+                        }
                     }
-                  
+
                   doc.set( "content", parsedText );
                   
                   // Emit JSON string
@@ -303,11 +313,14 @@ public class Parse extends Configured implements Tool
         }
       catch ( Throwable t )
         {
-          Document doc = new Document();
-          doc.set( "status", "error" );
-          doc.set( "errorMessage", "Failed to parse record: " + t.getMessage() );
-          
-          output.collect( key, new Text( doc.toString() ) );
+          if ( jobConf.getBoolean( "jbs.parse.emitParseErrorRecords", true ) )
+            {
+              Document doc = new Document();
+              doc.set( "status", "error" );
+              doc.set( "errorMessage", "Failed to parse record: " + t.getMessage() );
+              
+              output.collect( key, new Text( doc.toString() ) );
+            }
         }
     }
 
@@ -397,9 +410,7 @@ public class Parse extends Configured implements Tool
    */
   public void usage( )
   {
-    String usage = 
-        "Usage: Parse <outputDir> <(w)arcfile>...\n" 
-      ;
+    String usage =  "Usage: Parse <outputDir> <(w)arcfile>...\n" ;
     
     System.out.println( usage );
   }
