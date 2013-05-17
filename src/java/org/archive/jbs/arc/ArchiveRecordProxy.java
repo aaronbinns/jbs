@@ -112,7 +112,17 @@ public class ArchiveRecordProxy
     else if ( url.startsWith( "ftp:" ) )
       {
         this.warcRecordType  = WARCConstants.WARCRecordType.RESOURCE.toString();
-        this.warcContentType = "application/octet-stream";
+
+        // The mime-type in the ARC header tells us whether this is part of the 
+        // control conversation or the actual downloaded file.
+        if ( "text/plain".equals( header.getMimetype( ) ) )
+          {
+            this.warcContentType = "text/plain";
+          }
+        else
+          {
+            this.warcContentType = "application/octet-stream";
+          }
 
         // HACK: We set a bogus HTTP status code 200 here because
         //       later in the indexing workflow, non-200 codes are

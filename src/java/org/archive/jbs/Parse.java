@@ -126,7 +126,13 @@ public class Parse extends Configured implements Tool
                 {
                   // We only care about "ftp://" resource records.  It's possible that the ArchiveRecordProxy will
                   // pass us resource records other than ftp, so we filter out non-ftp ones here.
-                  if ( record.getUrl().startsWith( "ftp://" ) )
+                  //
+                  // Also, only care about "application/octet-stream" content-type, which indicates the record is
+                  // the ftp file download and a directory listing.
+                  if ( record.getUrl().startsWith( "ftp://" ) 
+                       &&
+                       "application/octet-stream".equals( record.getWARCContentType() )
+                     )
                     {
                       LOG.info( "Process resource: " + record.getUrl() + " digest:" + record.getDigest() + " date: " + record.getDate() );
 
