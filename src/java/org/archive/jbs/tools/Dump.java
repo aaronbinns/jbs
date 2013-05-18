@@ -25,8 +25,9 @@ import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
 
 /**
- * Command-line utility to dump the contents of a Hadoop MapFile or
- * SequenceFile.
+ * Command-line utility to dump the contents of one or more Hadoop
+ * MapFile or SequenceFile.  Default is to emit both key and value,
+ * but "-k" or "-v" command-line options can select one or the other.
  */
 public class Dump extends Configured implements Tool
 {
@@ -40,24 +41,51 @@ public class Dump extends Configured implements Tool
 
   public int run( String[] args ) throws Exception
   {
-    String usage = "Usage: Dump <mapfile|sequencefile>";
+    String usage = "Usage: Dump [-k|-v] <mapfile|sequencefile>...";
       
-    if (args.length != 1)
+    if ( args.length < 1 )
       {
         System.err.println(usage);
         return 1;
       }
-      
-    String in = args[0];
+    
+    int i = 0;
+    int mode = 0;
+    if ( args[0].equals( "-k" ) )
+      {
+        mode = 1;
+        i++;
+      }
+    else if ( args[0].equals( "-v" ) )
+      {
+        mode = 2;
+        i++;
+      }
+    
+    for ( ; i < args.length; i++ )
+      {
+        FileSystem inputfs = FileSystem.get( new java.net.URI( args[i] ), getConf() );
+        
+        for ( FileStatus status : inputfs.globStatus( new Path( args[i] ) ) )
+          {
+            Path inputPath  = status.getPath();
+            
+            dump( inputfs, inputPath, mode );
+          }
+      }
 
-    Configuration conf = new Configuration();
-    FileSystem fs = FileSystem.get(conf);
+    return 0;
+  }
+
+  public void dump( FileSystem fs, Path inputPath, int mode ) throws Exception
+  {
+    Configuration conf = getConf();
 
     MapFile     .Reader mapReader = null;
     SequenceFile.Reader seqReader = null;
     try
       {
-        mapReader = new MapFile.Reader(fs, in, conf);
+        mapReader = new MapFile.Reader( fs, inputPath.toString(), conf );
       }
     catch ( IOException ioe )
       {
@@ -71,11 +99,7 @@ public class Dump extends Configured implements Tool
 
         while ( mapReader.next(key, value))
           {
-            System.out.print( "[" );
-            System.out.print( key );
-            System.out.print( "] [" );
-            System.out.print( value );
-            System.out.println( "]" );
+            output( key, value, mode );
           }
       }
     else
@@ -83,12 +107,12 @@ public class Dump extends Configured implements Tool
         // Not a MapFile...try a SequenceFile.
         try
           {
-            seqReader = new SequenceFile.Reader(fs, new Path(in), conf);
+            seqReader = new SequenceFile.Reader( fs, inputPath, conf );
           }
         catch ( IOException ioe )
           {
             // Hrm, neither MapFile nor SequenceFile.
-            throw new IOException( "Cannot open file: " + in );
+            throw new IOException( "Cannot open file: " + inputPath );
           }
 
         WritableComparable key   = (WritableComparable) ReflectionUtils.newInstance(seqReader.getKeyClass()  , conf);
@@ -96,14 +120,30 @@ public class Dump extends Configured implements Tool
 
         while ( seqReader.next(key, value))
           {
-            System.out.print( "[" );
-            System.out.print( key );
-            System.out.print( "] [" );
-            System.out.print( value );
-            System.out.println( "]" );
+            output( key, value, mode );
           }
       }
+  }
 
-    return 0;
+  void output( Writable key, Writable value, int mode )
+  {
+    switch ( mode )
+      {
+      case 0:
+        System.out.print( "[" );
+        System.out.print( key );
+        System.out.print( "] [" );
+        System.out.print( value );
+        System.out.println( "]" );
+        break;
+        
+      case 1:
+        System.out.println( key );
+        break;
+
+      case 2:
+        System.out.println( value );
+        break;
+      }
   }
 }
